@@ -4,6 +4,11 @@
 <head>
     <title>drawGuess 게임</title>
     <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: aquamarine;
+        }
         #canvas-wrapper {
             position: relative;
         }
@@ -45,9 +50,9 @@
         };
 
 
-        let _currentDrawType = DrawType.fill;
+        let _currentDrawType = DrawType.circleOutline;
         let _currentColor = 'black';
-        let _currentLineWidth = 1;
+        let _currentLineWidth = 5;
 
         previewCanvas.addEventListener('mousedown', startDrawing);
         previewCanvas.addEventListener('mousemove', draw);
