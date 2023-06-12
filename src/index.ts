@@ -13,7 +13,7 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
 		if (data.type == "sendDrawingData") {
 			for (const p of ScriptApp.players) {
 				if (p.tag.widget) {
-          data.type = "drawingNotify";
+					data.type = "drawingNotify";
 					p.tag.widget.sendMessage(data);
 				}
 			}

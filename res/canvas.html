@@ -3,79 +3,136 @@
 
 <head>
     <title>drawGuess 게임</title>
+    <style>
+        #canvas-wrapper {
+            position: relative;
+        }
+
+        #main-canvas,
+        #preview-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="500" height="500"></canvas>
+    <div id="canvas-wrapper">
+        <canvas id="main-canvas" width="500" height="500"></canvas>
+        <canvas id="preview-canvas" width="500" height="500"></canvas>
+    </div>
 
     <script>
-        // 캔버스 요소와 그리기 컨텍스트 가져오기
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
-        context.fillStyle = '#ffffff'; // 흰색
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        const mainCanvas = document.getElementById('main-canvas');
+        const mainContext = mainCanvas.getContext('2d');
+        mainContext.fillStyle = '#ffffff'; // 흰색
+        mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+        const previewCanvas = document.getElementById('preview-canvas');
+        const previewContext = previewCanvas.getContext('2d');
 
-        // 그림 그리기 관련 변수 설정
         let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
+        let startX = 0;
+        let startY = 0;
 
-        // 그림 그리기 이벤트 처리
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
+        const DrawType = {
+            pencil: 'pencil',
+            circle: 'circle',
+            rect: 'rect'
+        };
 
-        // 그림 그리기 시작
+        let _currentDrawType = DrawType.rect;
+
+        previewCanvas.addEventListener('mousedown', startDrawing);
+        previewCanvas.addEventListener('mousemove', draw);
+        previewCanvas.addEventListener('mouseup', endDrawing);
+        previewCanvas.addEventListener('mouseout', endDrawing);
+
         function startDrawing(e) {
             isDrawing = true;
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+            [startX, startY] = [e.offsetX, e.offsetY];
         }
 
-        // 그림 그리기 중
         function draw(e) {
             if (!isDrawing) return;
 
-            context.beginPath();
-            context.moveTo(lastX, lastY);
-            context.lineTo(e.offsetX, e.offsetY);
-            context.stroke();
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
 
-            // 부모 창에 그린 그림 데이터 전달
+            previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
             const drawingData = {
                 type: "sendDrawingData",
-                startX: lastX,
-                startY: lastY,
-                endX: e.offsetX,
-                endY: e.offsetY
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY
             };
-            window.parent.postMessage(drawingData, '*');
 
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+            drawShape(drawingData, previewContext);
         }
 
-        // 그림 그리기 종료
-        function stopDrawing() {
+        function endDrawing(e) {
+            if (!isDrawing) return;
             isDrawing = false;
+
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
+
+            const drawingData = {
+                type: "sendDrawingData",
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY
+            };
+
+            drawShape(drawingData, mainContext);
+            previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            window.parent.postMessage(drawingData, '*');
         }
 
-        // 다른 플레이어들에게 그림 데이터 받기
-        window.addEventListener('message', receiveDrawingData);
+        function drawShape(data, context) {
+            const { drawType, startX, startY, currentX, currentY } = data;
 
-        function receiveDrawingData(event) {
-            if(event.data.type == "drawingNotify"){
-                const drawingData = event.data;
-                drawLine(drawingData.startX, drawingData.startY, drawingData.endX, drawingData.endY);
+            switch (drawType) {
+                case DrawType.pencil: {
+                    context.beginPath();
+                    context.moveTo(startX, startY);
+                    context.lineTo(currentX, currentY);
+                    context.stroke();
+                    context.closePath();
+                    break;
+                }
+                case DrawType.circle: {
+                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)) / 2;
+                    context.beginPath();
+                    context.arc((startX + currentX) / 2, (startY + currentY) / 2, radius, 0, 2 * Math.PI);
+                    context.fillStyle = 'rgb(255, 0, 0)';
+                    context.fill();
+                    context.closePath();
+                    break;
+                }
+                case DrawType.rect: {
+                    context.beginPath();
+                    context.fillStyle = 'rgb(0, 0, 255)';
+                    context.fillRect(startX, startY, currentX - startX, currentY - startY);
+                    context.closePath();
+                    break;
+                }
             }
-        
         }
 
-        function drawLine(startX, startY, endX, endY) {
-            context.beginPath();
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.stroke();
-        }
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data.type === "drawingNotify") {
+                drawShape(data, mainContext);
+            }
+        });
+
     </script>
 </body>
 
