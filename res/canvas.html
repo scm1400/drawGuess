@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>drawGuess 게임</title>
+</head>
+
+<body>
+    <canvas id="canvas" width="500" height="500"></canvas>
+
+    <script>
+        // 캔버스 요소와 그리기 컨텍스트 가져오기
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#ffffff'; // 흰색
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 그림 그리기 관련 변수 설정
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 그림 그리기 이벤트 처리
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // 그림 그리기 시작
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        // 그림 그리기 중
+        function draw(e) {
+            if (!isDrawing) return;
+
+            context.beginPath();
+            context.moveTo(lastX, lastY);
+            context.lineTo(e.offsetX, e.offsetY);
+            context.stroke();
+
+            // 부모 창에 그린 그림 데이터 전달
+            const drawingData = {
+                type: "sendDrawingData",
+                startX: lastX,
+                startY: lastY,
+                endX: e.offsetX,
+                endY: e.offsetY
+            };
+            window.parent.postMessage(drawingData, '*');
+
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        // 그림 그리기 종료
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // 다른 플레이어들에게 그림 데이터 받기
+        window.addEventListener('message', receiveDrawingData);
+
+        function receiveDrawingData(event) {
+            if(event.data.type == "drawingNotify"){
+                const drawingData = event.data;
+                drawLine(drawingData.startX, drawingData.startY, drawingData.endX, drawingData.endY);
+            }
+        
+        }
+
+        function drawLine(startX, startY, endX, endY) {
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.lineTo(endX, endY);
+            context.stroke();
+        }
+    </script>
+</body>
+
+</html>
