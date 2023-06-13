@@ -12,12 +12,14 @@
         }
 
         body {
-            background: aliceblue;
+            
         }
 
         #widget {
-            padding: 16px;
+            border-radius: 6px;
+            padding: 48px 8px;
             display: flex;
+            background: white;
             gap: 16px;
         }
 
@@ -44,9 +46,10 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            border-radius: 4px;
         }
 
-        .active {
+        .tool.active {
             background: #002bffa1;
         }
 
@@ -95,6 +98,40 @@
 
         .palette-color.active {
             border: 2px solid white;
+        }
+
+        .quiz-wrapper {
+            width: 600px;
+            height: 400px;
+            position: relative;
+            background: white;
+        }
+
+        #category {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            top: -20px;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 6px;
+            background-color: #e37171;
+            padding: 0 10px;
+            height: 30px;
+        }
+
+        #quiz {
+            user-select: none;
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            font-size: 20px;
+            font-weight: 600;
+            z-index: 2;
+            border-radius: 6px;
+            background-color: #71e371;
+            padding: 0 10px;
+            height: 30px;
         }
 
         .hidden {
@@ -261,10 +298,15 @@
             </div>
         </div>
     </div>
-    <div id="canvas-wrapper">
-        <canvas id="main-canvas" width="600px" height="400px"></canvas>
-        <canvas id="preview-canvas" width="600px" height="400px"></canvas>
+    <div class="quiz-wrapper">
+        <div id="category">주제: 동물 | oo님 차례</div>
+        <div id="canvas-wrapper">
+            <div id="quiz" class="hidden">주제어: 토끼</div>
+            <canvas id="main-canvas" width="600px" height="400px"></canvas>
+            <canvas id="preview-canvas" width="600px" height="400px"></canvas>
+        </div>
     </div>
+
 </div>
 
 <script>
@@ -332,7 +374,7 @@
     };
 
 
-    let _currentDrawType = DrawType.circleOutline;
+    let _currentDrawType = DrawType.pencil;
     let _currentColor = 'black';
     let _currentLineWidth = 5;
 
@@ -342,6 +384,7 @@
     previewCanvas.addEventListener('mouseout', endDrawing);
 
     function startDrawing(e) {
+        if (!_isDrawer) return;
         isDrawing = true;
         [startX, startY] = [e.offsetX, e.offsetY];
 
@@ -512,15 +555,33 @@
         }
     }
 
+    let _isDrawer = false;
     window.addEventListener('message', (event) => {
         const data = event.data;
-        if (data.type === "drawingNotify") {
-            drawShape(data, mainContext);
-        } else if (data.type === "batchedDrawingData") {
-            if (Array.isArray(event.data.data)) {
-                for (const drawingData of event.data.data) {
-                    drawShape(drawingData, mainContext);
+        switch (data.type) {
+            case "init": {
+                document.getElementById("category").innerText = `${data.drawerName}의 그림 | 주제: ${data.category}`;
+                _isDrawer = data.isDrawer;
+
+                if (_isDrawer) {
+                    document.getElementById("quiz").innerText = `주제어: ${data.quiz}`;
+                    document.getElementById("quiz").classList.remove("hidden");
+                } else {
+                    document.getElementById("tools").classList.add("hidden");
                 }
+                break;
+            }
+            case "drawingNotify": {
+                drawShape(data, mainContext);
+                break;
+            }
+            case "batchedDrawingData": {
+                if (Array.isArray(event.data.data)) {
+                    for (const drawingData of event.data.data) {
+                        drawShape(drawingData, mainContext);
+                    }
+                }
+                break;
             }
         }
     });
