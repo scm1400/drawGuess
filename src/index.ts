@@ -42,7 +42,8 @@ ScriptApp.onSay.Add((player, text) => {
         if (player.id === _drawerId) return;
         if (text === _currentQuiz) {
             _start = false;
-            ScriptApp.showCenterLabel(`${player.name}님 정답!`, 0x000000, 0xffffff, 120, 6000);
+            ScriptApp.playSound("correct.mp3", false, true);
+            ScriptApp.showCenterLabel(`\n${player.name}님 정답!\n`, 0x000000, 0xffffff, 120, 6000);
             for (const player of ScriptApp.players) {
                 if (!player) continue;
                 if (player.tag.widget) {
@@ -51,7 +52,8 @@ ScriptApp.onSay.Add((player, text) => {
                 }
             }
         } else {
-            player.showCenterLabel(`땡!`, 0x000000, 0xff0000, 120, 6000);
+            player.showCenterLabel(`\n❌ 땡!\n`, 0x000000, 0xff0000, 120, 3000);
+            player.playSound("incorrect.mp3", false, true);
         }
     }
 })
