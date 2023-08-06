@@ -70,6 +70,7 @@
         #widget.mobile {
             padding: 12px 8px 12px;
             flex-direction: column;
+            justify-content: flex-start;
             gap: 8px;
             height: 100vh;
         }
@@ -201,6 +202,7 @@
         }
 
         #category {
+            display: flex;
             position: absolute;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -212,12 +214,11 @@
             padding: 0 10px;
             height: 30px;
             width: max-content;
+            align-items: center;
+            justify-content: center;
         }
 
         .mobile #category {
-            display: flex;
-            align-items: center;
-            justify-content: center;
             bottom: 0;
             font-weight: 600;
             padding: 0 10px;
@@ -284,7 +285,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
     </style>
 </head>
@@ -292,7 +293,7 @@
 <body>
 <div class="eraser-cousor hidden">
 </div>
-<div id="widget">
+<div id="widget" class="hidden">
     <div id="tools">
         <div class="draw-tools">
             <div class="tool active" data-tool="pencil">
@@ -557,6 +558,7 @@
     });
 
     previewCanvas.addEventListener('touchend', endDrawing);
+    previewCanvas.addEventListener('touchcancel', endDrawing);
 
     function selectSize(el) {
         document.querySelectorAll(".size-selector > div").forEach((el) => {
@@ -764,16 +766,9 @@
         const data = event.data;
         switch (data.type) {
             case "init": {
-                document.getElementById("category").innerText = `${data.drawerName}의 그림 | 주제: ${data.category}`;
+                document.getElementById("category").innerText = `${data.drawerName}님의 그림 | 주제: ${data.category}`;
                 _isDrawer = data.isDrawer;
                 _isMobile = Boolean(data.isMobile);
-
-                if (_isDrawer) {
-                    document.getElementById("quiz").innerText = `주제어: ${data.quiz}`;
-                    document.getElementById("quiz").classList.remove("hidden");
-                } else {
-                    document.getElementById("tools").classList.add("hidden");
-                }
 
                 if (_isMobile) {
                     document.getElementById("widget").classList.add("mobile");
@@ -805,6 +800,15 @@
                         document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
                     }, 500)
                 }
+
+                if (_isDrawer) {
+                    document.getElementById("quiz").innerText = `주제어: ${data.quiz}`;
+                    document.getElementById("quiz").classList.remove("hidden");
+                } else {
+                    document.getElementById("tools").classList.add("hidden");
+                }
+
+                document.getElementById("widget").classList.remove("hidden");
                 break;
             }
             case "drawingNotify": {
