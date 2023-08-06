@@ -70,12 +70,17 @@ function startGame() {
     const drawerName = ScriptApp.getPlayerByID(_drawerId).name;
     for (const player of ScriptApp.players) {
         if (!player) continue;
-        player.tag.widget = player.showWidget("canvas.html", "middle", 750, 500);
+        if (player.isMobile) {
+            player.tag.widget = player.showWidget("canvas.html", "sidebar", 750, 500);
+        } else {
+            player.tag.widget = player.showWidget("canvas.html", "middle", 750, 500);
+        }
         player.tag.widget.sendMessage({
             type: "init",
             category: category,
             quiz: _currentQuiz,
             drawerName: drawerName,
+            isMobile: player.isMobile,
             isDrawer: player.id === _drawerId
         })
         //@ts-ignore

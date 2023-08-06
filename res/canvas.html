@@ -3,12 +3,56 @@
 
 <head>
     <title>drawGuess 게임</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/typography.css">
+    <link rel="stylesheet" type="text/css" href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/color.css">
     <style>
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 400;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Regular.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 500;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Medium.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 600;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-SemiBold.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 700;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Bold.woff") format("woff");
+        }
+
         * {
-            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
             padding: 0;
             margin: 0;
-            /*background-color: aquamarine;*/
+            box-sizing: border-box;
+            font-family: "Pretendard JP";
+            color: #27262E;
         }
 
         body {
@@ -23,6 +67,13 @@
             gap: 16px;
         }
 
+        #widget.mobile {
+            padding: 12px 8px 12px;
+            flex-direction: column;
+            gap: 8px;
+            height: 100vh;
+        }
+
         #tools {
             display: flex;
             flex-direction: column;
@@ -33,11 +84,32 @@
             box-shadow: inset 0 0 5px 1px black;
         }
 
+        .mobile #tools {
+            flex-direction: row;
+            gap: 4px;
+            padding: 4px;
+            box-shadow: inset 0 0 5px 1px black;
+            height: max-content;
+        }
+
+        .mobile .tool > svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .mobile .draw-tools > .tool {
+            padding: 3px;
+        }
+
         .draw-tools {
             position: relative;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4px;
+        }
+
+        .mobile .draw-tools {
+            grid-template-columns: repeat(4, 1fr);
         }
 
         .draw-tools > .tool {
@@ -89,6 +161,22 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 4px;
+            /* grid-template-columns: repeat(6, 1fr); */
+            /* flex-grow: 1; */
+            /* height: 100%; */
+            width: 100%;
+        }
+
+        .mobile .palette {
+            gap: 4px;
+            grid-template-columns: repeat(4, 1fr);
+            flex-grow: 1;
+            grid-auto-rows: max-content;
+        }
+
+        .mobile .palette-color {
+            height: 24px;
+            width: 24px;
         }
 
         .palette-color {
@@ -123,6 +211,21 @@
             background-color: #e37171;
             padding: 0 10px;
             height: 30px;
+            width: max-content;
+        }
+
+        .mobile #category {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            bottom: 0;
+            font-weight: 600;
+            padding: 0 10px;
+            height: 30px;
+            z-index: 1;
+            font-size: 16px;
+            top: unset;
+            transform: translate(-50%, -100%);
         }
 
         #quiz {
@@ -144,6 +247,10 @@
             gap: 6px;
             align-items: center;
             justify-content: center;
+        }
+
+        .mobile .size-selector {
+            flex-direction: column;
         }
 
         .size-selector > div {
@@ -669,7 +776,34 @@
                 }
 
                 if (_isMobile) {
+                    document.getElementById("widget").classList.add("mobile");
+                    const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                    const chatHeight = 54;
+                    window.parent.postMessage({
+                        type: "WidgetRearrange",
+                        width: "100%",
+                        height: `calc(100% - ${rtcAndNotchHeight + chatHeight}px)`,
+                        top: -chatHeight + 'px',
+                        anchor: 'sidebar'
+                    }, "*")
+                    setTimeout(() => {
+                        const widget = document.getElementById("widget");
+                        const style = window.getComputedStyle(widget);
+                        const paddingLeft = parseFloat(style.paddingLeft);
+                        const paddingRight = parseFloat(style.paddingRight);
+                        const paddingTop = parseFloat(style.paddingTop);
+                        const paddingBottom = parseFloat(style.paddingBottom);
+                        const gap = parseFloat(style.gap);
 
+                        const contentWidth = widget.clientWidth - paddingLeft - paddingRight;
+                        const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
+
+                        document.getElementById("main-canvas").setAttribute("height", contentHeight + 'px');
+                        document.getElementById("main-canvas").setAttribute("width", contentWidth + 'px');
+
+                        document.getElementById("preview-canvas").setAttribute("height", contentHeight + 'px');
+                        document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
+                    }, 500)
                 }
                 break;
             }
