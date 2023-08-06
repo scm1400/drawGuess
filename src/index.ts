@@ -201,13 +201,13 @@ function getCategoryDescription(key: keyof typeof DrawCategory): DrawCategory {
 
 function showCorrectLabel(player: ScriptPlayer | null, key: string, correct = true) {
     let str = "";
-    let emoji = " ";
+    let emoji = "🌈 ";
     let fontColor = "#270";
     let color = "rgba(223, 242, 191, 0.8)";
     let borderColor = "rgba(36, 241, 6, 0.46)";
     let boxShadow = "box-shadow: 0px 0px 2px #259c08";
     if (correct === false) {
-        emoji = "🌈 ";
+        emoji = "❌ ";
         fontColor = "#D8000C";
         color = "rgba(255, 186, 186, 0.8)";
         borderColor = "rgba(241, 6, 6, 0.81)";

@@ -208,14 +208,18 @@
             transform: translate(-50%, -50%);
             top: -20px;
             font-size: 20px;
-            font-weight: 600;
-            border-radius: 6px;
-            background-color: #e37171;
-            padding: 0 10px;
-            height: 30px;
+            font-weight: 500;
+            border-radius: 4px;
+            padding: 0 12px;
+            height: 34px;
             width: max-content;
             align-items: center;
             justify-content: center;
+
+            color: white;
+            background: rgb(255, 27, 0);
+            background: linear-gradient(0deg, rgba(255, 27, 0, 1) 0%, rgba(251, 75, 2, 1) 100%);
+            box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5), 7px 7px 20px 0px rgba(0, 0, 0, .1), 4px 4px 5px 0px rgba(0, 0, 0, .1);
         }
 
         .mobile #category {
@@ -230,17 +234,24 @@
         }
 
         #quiz {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             user-select: none;
             position: absolute;
             left: 16px;
             top: 16px;
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 500;
             z-index: 2;
             border-radius: 6px;
-            background-color: #71e371;
+            /*background-color: #71e371;*/
             padding: 0 10px;
-            height: 30px;
+            height: 32px;
+
+            background-color: #4dccc6;
+            background-image: linear-gradient(315deg, #4dccc6 0%, #96e4df 74%);
+            box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5), 7px 7px 20px 0px rgba(0, 0, 0, .1), 4px 4px 5px 0px rgba(0, 0, 0, .1);
         }
 
         .size-selector {
@@ -802,7 +813,7 @@
                 }
 
                 if (_isDrawer) {
-                    document.getElementById("quiz").innerText = `주제어: ${data.quiz}`;
+                    document.getElementById("quiz").innerText = `정답: ${data.quiz}`;
                     document.getElementById("quiz").classList.remove("hidden");
                 } else {
                     document.getElementById("tools").classList.add("hidden");
