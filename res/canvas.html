@@ -12,7 +12,7 @@
         }
 
         body {
-            
+
         }
 
         #widget {
@@ -55,6 +55,9 @@
 
         #canvas-wrapper {
             position: relative;
+            height: max-content;
+            /* width: max-content; */
+            flex-grow: 1;
         }
 
         #main-canvas,
@@ -101,10 +104,12 @@
         }
 
         .quiz-wrapper {
-            width: 600px;
+            display: flex;
+            /* width: 600px; */
             height: 400px;
             position: relative;
             background: white;
+            flex-grow: 1;
         }
 
         #category {
@@ -132,6 +137,43 @@
             background-color: #71e371;
             padding: 0 10px;
             height: 30px;
+        }
+
+        .size-selector {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .size-selector > div {
+            cursor: pointer;
+            border-radius: 999px;
+            background-color: white;
+        }
+
+        .size-selector > div.active {
+            background-color: deeppink;
+        }
+
+        .size-s {
+            width: 9px;
+            height: 9px;
+        }
+
+        .size-sm {
+            width: 12px;
+            height: 12px;
+        }
+
+        .size-m {
+            width: 18px;
+            height: 18px;
+        }
+
+        .size-l {
+            width: 24px;
+            height: 24px;
         }
 
         .hidden {
@@ -297,6 +339,12 @@
             <div class="palette-color" style="background: deeppink">
             </div>
         </div>
+        <div class="size-selector">
+            <div class="size-s active" onclick="selectSize(this)"></div>
+            <div class="size-sm" onclick="selectSize(this)"></div>
+            <div class="size-m" onclick="selectSize(this)"></div>
+            <div class="size-l" onclick="selectSize(this)"></div>
+        </div>
     </div>
     <div class="quiz-wrapper">
         <div id="category">주제: 동물 | oo님 차례</div>
@@ -358,7 +406,6 @@
             el.classList.add("active");
             const color = el.style.backgroundColor;
             _currentColor = color;
-
         }
     })
 
@@ -383,18 +430,63 @@
     previewCanvas.addEventListener('mouseup', endDrawing);
     previewCanvas.addEventListener('mouseout', endDrawing);
 
+    // 모바일용 터치 이벤트 리스너 추가
+    previewCanvas.addEventListener('touchstart', function (event) {
+        // 여러 개의 터치 포인트가 있을 수 있으므로, 첫 번째 터치 포인트를 사용
+        const touch = event.touches[0];
+        // 마우스 이벤트에서의 좌표와 동일한 방식으로 터치의 x, y 좌표를 가져옴
+        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
+        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
+        startDrawing({offsetX, offsetY}); // 만약 startDrawing 함수가 좌표를 파라미터로 받는다면 이런 식으로 전달
+        event.preventDefault(); // 기본 스크롤 행동 등을 막기 위함
+    });
+
+    previewCanvas.addEventListener('touchmove', function (event) {
+        const touch = event.touches[0];
+        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
+        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
+        draw({offsetX, offsetY});
+        event.preventDefault();
+    });
+
+    previewCanvas.addEventListener('touchend', endDrawing);
+
+    function selectSize(el) {
+        document.querySelectorAll(".size-selector > div").forEach((el) => {
+            el.classList.remove("active");
+        })
+        el.classList.add("active");
+
+        let lineWidth = 5;
+        if (el.classList.contains("size-s")) {
+            lineWidth = 5;
+        } else if (el.classList.contains("size-sm")) {
+            lineWidth = 7.5;
+        } else if (el.classList.contains("size-m")) {
+            lineWidth = 10;
+        } else if (el.classList.contains("size-l")) {
+            lineWidth = 15;
+        }
+
+        _currentLineWidth = lineWidth;
+        // previewContext.lineWidth = lineWidth;
+        // mainContext.lineWidth = lineWidth;
+    }
+
     function startDrawing(e) {
         if (!_isDrawer) return;
         isDrawing = true;
         [startX, startY] = [e.offsetX, e.offsetY];
 
-        if (_currentDrawType === DrawType.eraser) {
-            mainContext.globalCompositeOperation = 'destination-out';
-            mainContext.beginPath();
-            mainContext.arc(startX, startY, _currentLineWidth / 2, 0, Math.PI * 2, false);
-            mainContext.fill();
-            mainContext.closePath();
-        } else if (_currentDrawType === DrawType.fill) {
+        // if (_currentDrawType === DrawType.eraser) {
+        //     mainContext.globalCompositeOperation = 'destination-out';
+        //     mainContext
+        //     mainContext.beginPath();
+        //     mainContext.arc(startX, startY, _currentLineWidth / 2, 0, Math.PI * 2, false);
+        //     mainContext.fill();
+        //     mainContext.closePath();
+        // } else 
+        if (_currentDrawType === DrawType.fill) {
             drawShape({
                 startX,
                 startY,
@@ -404,7 +496,7 @@
 
     function draw(e) {
         if (!isDrawing || _currentDrawType === DrawType.fill) return;
-        console.log(1)
+        // console.log(1)
         const currentX = e.offsetX;
         const currentY = e.offsetY;
 
@@ -416,7 +508,7 @@
                 startY,
                 currentX,
                 currentY,
-                color: _currentColor,
+                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
                 lineWidth: _currentLineWidth
             };
 
@@ -464,7 +556,7 @@
                 startY,
                 currentX,
                 currentY,
-                color: _currentColor,
+                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
                 lineWidth: _currentLineWidth
             };
             drawShape(drawingData, mainContext);
@@ -544,7 +636,11 @@
             }
             case DrawType.pencil:
             case DrawType.eraser: {
-                context.globalCompositeOperation = drawType === DrawType.eraser ? 'destination-out' : 'source-over';
+                // context.globalCompositeOperation = drawType === DrawType.eraser ? 'destination-out' : 'source-over';
+                context.globalCompositeOperation = 'source-over';
+                context.fillStyle = DrawType.eraser ? 'white' : color;
+                context.lineJoin = 'round';
+                context.lineCap = 'round';
                 context.beginPath();
                 context.moveTo(startX, startY);
                 context.lineTo(currentX, currentY);
@@ -556,18 +652,24 @@
     }
 
     let _isDrawer = false;
+    let _isMobile = false;
     window.addEventListener('message', (event) => {
         const data = event.data;
         switch (data.type) {
             case "init": {
                 document.getElementById("category").innerText = `${data.drawerName}의 그림 | 주제: ${data.category}`;
                 _isDrawer = data.isDrawer;
+                _isMobile = Boolean(data.isMobile);
 
                 if (_isDrawer) {
                     document.getElementById("quiz").innerText = `주제어: ${data.quiz}`;
                     document.getElementById("quiz").classList.remove("hidden");
                 } else {
                     document.getElementById("tools").classList.add("hidden");
+                }
+
+                if (_isMobile) {
+
                 }
                 break;
             }
@@ -733,6 +835,7 @@
             CanvasRenderingContext2D.prototype.fillFlood = fillContext;
         }
         ;
+
 
         return fillUint8ClampedArray;
 
