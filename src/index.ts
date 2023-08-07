@@ -163,7 +163,7 @@ function startGame() {
         player.tag.widget.sendMessage({
             type: "init",
             category: _currentCategory,
-            quiz: _currentQuiz,
+            quiz: player.id === _drawerId ? _currentQuiz : "",
             drawerName: drawerName,
             isMobile: player.isMobile,
             isDrawer: player.id === _drawerId

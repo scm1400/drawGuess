@@ -439,25 +439,25 @@
             </div>
             <div class="palette-color" style="background: grey">
             </div>
-            <div class="palette-color" style="background: blue">
+            <div class="palette-color" style="background: #0000FF">
             </div>
-            <div class="palette-color" style="background: green">
+            <div class="palette-color" style="background: #00FFFF">
             </div>
-            <div class="palette-color" style="background: red">
+            <div class="palette-color" style="background: #008000">
+            </div>
+            <div class="palette-color" style="background: #808000">
+            </div>
+            <div class="palette-color" style="background: #FFA500">
             </div>
             <div class="palette-color" style="background: saddlebrown">
             </div>
-            <div class="palette-color" style="background: lawngreen">
+            <div class="palette-color" style="background: red">
             </div>
-            <div class="palette-color" style="background: maroon">
-            </div>
-            <div class="palette-color" style="background: orange">
+            <div class="palette-color" style="background: #FF00FF">
             </div>
             <div class="palette-color" style="background: yellow">
             </div>
-            <div class="palette-color" style="background: hotpink">
-            </div>
-            <div class="palette-color" style="background: deeppink">
+            <div class="palette-color" style="background: #800080">
             </div>
         </div>
         <div class="size-selector">
@@ -544,7 +544,7 @@
 
     let _currentDrawType = DrawType.pencil;
     let _currentColor = 'black';
-    let _currentLineWidth = 5;
+    let _currentLineWidth = 3;
 
     previewCanvas.addEventListener('mousedown', startDrawing);
     previewCanvas.addEventListener('mousemove', draw);
@@ -579,11 +579,11 @@
         })
         el.classList.add("active");
 
-        let lineWidth = 5;
+        let lineWidth = 3;
         if (el.classList.contains("size-s")) {
-            lineWidth = 5;
+            lineWidth = 3;
         } else if (el.classList.contains("size-sm")) {
-            lineWidth = 7.5;
+            lineWidth = 5;
         } else if (el.classList.contains("size-m")) {
             lineWidth = 10;
         } else if (el.classList.contains("size-l")) {
@@ -708,7 +708,7 @@
 
         context.strokeStyle = color;
         context.fillStyle = color;
-        context.lineWidth = lineWidth;
+        context.lineWidth = DrawType.eraser ? lineWidth * 2 : lineWidth;
 
         if (drawType !== DrawType.eraser) {
             context.globalCompositeOperation = 'source-over';
