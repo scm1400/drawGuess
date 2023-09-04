@@ -63,7 +63,6 @@ ScriptApp.onLeavePlayer.Add(function (player) {
 })
 
 function initGame(player: ScriptPlayer) {
-    if(_start === false) return;
     _start = false;
     for (let player of ScriptApp.players) {
         player.tag.join = false;
@@ -119,6 +118,7 @@ function initGame(player: ScriptPlayer) {
                 _currentQuiz = getRandomQuiz(category);
                 startGame();
             } else {
+                if(_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         } else if (type == "closeWidget") {
@@ -127,6 +127,7 @@ function initGame(player: ScriptPlayer) {
             } else {
                 player.tag.selectWidget.destroy();
                 player.tag.selectWidget = null;
+                if(_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         }
