@@ -63,18 +63,20 @@ ScriptApp.onLeavePlayer.Add(function (player) {
 })
 
 function initGame(player: ScriptPlayer) {
+    if(_start === false) return;
     _start = false;
     for (let player of ScriptApp.players) {
         player.tag.join = false;
+        if (player.tag.widget) {
+            player.tag.widget.destroy();
+            player.tag.widget = null;
+        }
+        if (player.tag.selectWidget) {
+            player.tag.selectWidget.destroy();
+            player.tag.selectWidget = null;
+        }
     }
-    if (player.tag.widget) {
-        player.tag.widget.destroy();
-        player.tag.widget = null;
-    }
-    if (player.tag.selectWidget) {
-        player.tag.selectWidget.destroy();
-        player.tag.selectWidget = null;
-    }
+   
     _drawerId = player.id;
     player.tag.initCount = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
