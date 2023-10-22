@@ -780,10 +780,10 @@
         const data = event.data;
         switch (data.type) {
             case "init": {
-                document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
+                _localizeConatainer = data.localizeContainer;
                 _isDrawer = data.isDrawer;
                 _isMobile = Boolean(data.isMobile);
-                _localizeConatainer = e.data.localizeContainer;
+                document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
 
                 if (_isMobile) {
                     document.getElementById("widget").classList.add("mobile");
@@ -817,7 +817,7 @@
                 }
 
                 if (_isDrawer) {
-                    document.getElementById("quiz").innerText = `정답: ${data.quiz}`;
+                    document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
                     document.getElementById("quiz").classList.remove("hidden");
                 } else {
                     document.getElementById("tools").classList.add("hidden");

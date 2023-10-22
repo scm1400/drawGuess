@@ -620,10 +620,14 @@
         .btn-8 span:hover:after {
             width: 100%;
         }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-<div id="widget">
+<div id="widget" class="hidden">
     <div class="header">
         <h1 class="title" id="choose_topic"> 주제 선택</h1>
         <svg class="button-close" onclick="closeWidget()" width="20" height="21" viewBox="0 0 20 21"
@@ -677,13 +681,14 @@
             const data = event.data;
             switch (data.type) {
                 case "init": {
-                    _localizeConatainer = e.data.localizeContainer;
+                    _localizeContainer = data.localizeContainer;
                     for (const key in _localizeContainer) {
-                        const el = document.getElementById(_localizeContainer);
+                        const el = document.getElementById(key);
                         if (el) {
                             el.innerText = _localizeContainer[key];
                         }
                     }
+                    document.getElementById("widget").classList.remove("hidden");
                 }
             }
         }

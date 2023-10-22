@@ -32,6 +32,7 @@ const LocalizeContainer = {
         label_selecting: "((name))님이 주제를 선택하고 있습니다..\n [ ((time)) 초 후 다른 플레이어에게 선택권이 넘어갑니다. ]",
         label_answer: "정답은 ((answer))!",
         label_answer_player: "((name))님 정답!\n [ 정답: ((answer)) ]",
+        text_answer: "정답"
     },
     [Language.en]: {
         game_turn_info: "((name))'s drawing | Topic: ((category))",
@@ -51,6 +52,7 @@ const LocalizeContainer = {
         label_selecting: "((name)) is selecting a topic...\n [ The choice will pass to another player in ((time)) seconds. ]",
         label_answer: "The correct answer is ((answer))!",
         label_answer_player: "((name))'s correct answer!\n [ Answer: ((answer)) ]",
+        text_answer: "Correct answer"
     },
     [Language.ja]: {
         game_turn_info: "((name))さんの画像 | トピック: ((category))",
@@ -70,18 +72,19 @@ const LocalizeContainer = {
         label_selecting: "((name)) さんがトピックを選択しています。\n [ ((time)) 秒後、他のプレイヤーに選択権があります。]",
         label_answer: "正解は((answer))!",
         label_answer_player: "((name)) 正解!\n [ 正解: ((answer)) ]",
+        text_answer: "正解"
     }
 }
 
 enum DrawCategory {
-    FREE = "자유",
-    ANIMAL = "동물",
-    OBJECT = "사물",
-    JOB = "직업",
-    FOOD = "음식",
-    LOL = "리그오브레전드",
+    FREE = "category_free",
+    ANIMAL = "category_animal",
+    OBJECT = "category_object",
+    JOB = "category_job",
+    FOOD = "category_food",
+    LOL = "category_lol",
     SPORT = "스포츠",
-    POKEMON = "포켓몬"
+    POKEMON = "category_pokemon"
 }
 
 interface CategoryDB extends Record<string, Record<DrawCategory, string[]>> {
@@ -150,7 +153,10 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
 
 ScriptApp.onLeavePlayer.Add(function (player) {
     if (_drawerId === player.id) {
-        initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
+        ScriptApp.runLater(() => {
+            initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
+
+        }, 0.1)
     }
 })
 
@@ -167,7 +173,7 @@ function initGame(player: ScriptPlayer) {
             player.tag.selectWidget = null;
         }
     }
-   
+
     _drawerId = player.id;
     player.tag.initCount = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
@@ -218,7 +224,7 @@ function initGame(player: ScriptPlayer) {
                 _currentQuiz = getRandomQuiz(category);
                 startGame();
             } else {
-                if(_start === false) return;
+                if (_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         } else if (type == "closeWidget") {
@@ -227,7 +233,7 @@ function initGame(player: ScriptPlayer) {
             } else {
                 player.tag.selectWidget.destroy();
                 player.tag.selectWidget = null;
-                if(_start === false) return;
+                if (_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         }
@@ -263,9 +269,11 @@ function startGame() {
         } else {
             player.tag.widget = player.showWidget("canvas.html", "middleleft", 750, 500);
         }
+
         player.tag.widget.sendMessage({
             type: "init",
-            category: _currentCategory,
+            //@ts-ignore
+            category: LocalizeContainer[_language][_currentCategory],
             quiz: player.id === _drawerId ? _currentQuiz : "",
             drawerName: drawerName,
             isMobile: player.isMobile,
@@ -273,6 +281,7 @@ function startGame() {
             //@ts-ignore
             localizeContainer: LocalizeContainer[player.language]
         })
+        
         //@ts-ignore
         player.tag.widget.onMessage.Add(function (player, data) {
             if (data.type == "sendDrawingData") {
@@ -344,10 +353,10 @@ function showCorrectLabel(player: ScriptPlayer | null, key: string, correct = tr
         if (!correct) {
             player.showCenterLabel(key, 0xffcccc, 0xf12d06, 120, 1500);
         } else {
-            player.showCustomLabel(str, 0xffffff, 0x000000, 0, 100, 1, 1500);
+            player.showCustomLabel(str, 0xffffff, 0x000000, 0, 80, 1, 1500);
         }
     } else {
-        ScriptApp.showCustomLabel(str, 0xffffff, 0x000000, 0, 100, 1, 1500);
+        ScriptApp.showCustomLabel(str, 0xffffff, 0x000000, 0, 80, 1, 1500);
     }
 }
 
@@ -377,7 +386,7 @@ function handleGameInProgress() {
     for (const player of ScriptApp.players) {
         if (player.tag.join) {
             //@ts-ignore
-            showCorrectLabel(player, LocalizeContainer[player.language].lame_game_info.replace("((time))", String(_gameTime)));
+            showCorrectLabel(player, LocalizeContainer[player.language].label_game_info.replace("((time))", String(_gameTime)));
             if (_gameTime <= 0) {
                 //@ts-ignore
                 ScriptApp.showCenterLabel(LocalizeContainer[player.language].label_answer.replace("((answer))", _currentQuiz), 0xffffff, 0x000000, 120, 4000);
