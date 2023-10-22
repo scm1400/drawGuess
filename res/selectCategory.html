@@ -625,7 +625,7 @@
 <body>
 <div id="widget">
     <div class="header">
-        <h1 class="title"> 주제 선택</h1>
+        <h1 class="title" id="choose_topic"> 주제 선택</h1>
         <svg class="button-close" onclick="closeWidget()" width="20" height="21" viewBox="0 0 20 21"
              fill="none"
              xmlns="http://www.w3.org/2000/svg">
@@ -634,25 +634,25 @@
         </svg>
     </div>
     <div class="category-list">
-        <button class="custom-btn btn-1" onclick="selectCategory('ANIMAL')">
+        <button class="custom-btn btn-1" id="category_animal" onclick="selectCategory('ANIMAL')">
             🐘 동물
         </button>
-        <button class="custom-btn btn-2" onclick="selectCategory('FOOD')">
+        <button class="custom-btn btn-2" id="category_food" onclick="selectCategory('FOOD')">
             🍔 음식
         </button>
-        <button class="custom-btn btn-3" onclick="selectCategory('OBJECT')">
+        <button class="custom-btn btn-3" id="category_object" onclick="selectCategory('OBJECT')">
             <span>🔎 사물</span>
         </button>
-        <button class="custom-btn btn-4" onclick="selectCategory('JOB')">
+        <button class="custom-btn btn-4" id="category_job" onclick="selectCategory('JOB')">
             <span>👩‍🚀 직업</span>
         </button>
-        <button class="custom-btn btn-5" onclick="selectCategory('POKEMON')">
+        <button class="custom-btn btn-5" id="category_pokemon" onclick="selectCategory('POKEMON')">
             <span>🦄 포켓몬스터</span>
         </button>
-        <button class="custom-btn btn-6" onclick="selectCategory('LOL')">
+        <button class="custom-btn btn-6" id="category_lol" onclick="selectCategory('LOL')">
             <span>⚔️ 리그오브레전드</span>
         </button>
-        <button class="custom-btn btn-7" onclick="selectCategory('FREE')">
+        <button class="custom-btn btn-7" id="category_free" onclick="selectCategory('FREE')">
             <span>✏️ 직접 입력</span>
         </button>
     </div>
@@ -670,6 +670,24 @@
         SPORT: "SPORT",
         POKEMON: "POKEMON"
     }
+
+    let _localizeContainer;
+
+    window.addEventListener('message', (event) => {
+            const data = event.data;
+            switch (data.type) {
+                case "init": {
+                    _localizeConatainer = e.data.localizeContainer;
+                    for (const key in _localizeContainer) {
+                        const el = document.getElementById(_localizeContainer);
+                        if (el) {
+                            el.innerText = _localizeContainer[key];
+                        }
+                    }
+                }
+            }
+        }
+    )
 
     function selectCategory(category) {
         window.parent.postMessage({

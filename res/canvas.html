@@ -490,6 +490,7 @@
     let isDrawing = false;
     let startX = 0;
     let startY = 0;
+    let _localizeConatainer;
 
     const eraserCursor = document.querySelector('.eraser-cousor');
 
@@ -779,9 +780,10 @@
         const data = event.data;
         switch (data.type) {
             case "init": {
-                document.getElementById("category").innerText = `${data.drawerName}님의 그림 | 주제: ${data.category}`;
+                document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
                 _isDrawer = data.isDrawer;
                 _isMobile = Boolean(data.isMobile);
+                _localizeConatainer = e.data.localizeContainer;
 
                 if (_isMobile) {
                     document.getElementById("widget").classList.add("mobile");
@@ -914,7 +916,7 @@
                 return true;
             }
             return false;
-        };
+        }
 
         function fillUint8ClampedArray(data, x, y, color, tolerance, width, height) {
             if (!data instanceof Uint8ClampedArray) throw new Error("data must be an instance of Uint8ClampedArray");
@@ -934,7 +936,7 @@
             tolerance = (!isNaN(tolerance)) ? Math.min(Math.abs(Math.round(tolerance)), 254) : 0;
 
             return floodfill(data, xi, yi, color, tolerance, width, height);
-        };
+        }
 
         var getComputedColor = function (c) {
             var temp = document.createElement("div");
