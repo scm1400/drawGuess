@@ -158,15 +158,16 @@ function initGame(player: ScriptPlayer) {
     _start = false;
     for (let player of ScriptApp.players) {
         player.tag.join = false;
+        if (player.tag.widget) {
+            player.tag.widget.destroy();
+            player.tag.widget = null;
+        }
+        if (player.tag.selectWidget) {
+            player.tag.selectWidget.destroy();
+            player.tag.selectWidget = null;
+        }
     }
-    if (player.tag.widget) {
-        player.tag.widget.destroy();
-        player.tag.widget = null;
-    }
-    if (player.tag.selectWidget) {
-        player.tag.selectWidget.destroy();
-        player.tag.selectWidget = null;
-    }
+   
     _drawerId = player.id;
     player.tag.initCount = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
@@ -217,6 +218,7 @@ function initGame(player: ScriptPlayer) {
                 _currentQuiz = getRandomQuiz(category);
                 startGame();
             } else {
+                if(_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         } else if (type == "closeWidget") {
@@ -225,6 +227,7 @@ function initGame(player: ScriptPlayer) {
             } else {
                 player.tag.selectWidget.destroy();
                 player.tag.selectWidget = null;
+                if(_start === false) return;
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
             }
         }
