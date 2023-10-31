@@ -27,9 +27,9 @@ const LocalizeContainer = {
         prompt_desc: "문제의 답을 입력해주세요.",
         prompt_placeholder: "답을 입력해주세요.",
         label_wrong_text: "오답입니다!",
-        label_game_ing: "현재 게임이 진행중 입니다. 잠시만 기다려주세요.\n[ 라운드 종료까지 ((time))초 ]",
-        label_game_info: "정답이라고 생각하는 단어를 채팅으로 입력해보세요.\n[ 라운드 종료까지 ((time))초 ]",
-        label_selecting: "((name))님이 주제를 선택하고 있습니다..\n [ ((time)) 초 후 다른 플레이어에게 선택권이 넘어갑니다. ]",
+        label_game_ing: "현재 게임이 진행중 입니다. 잠시만 기다려주세요.\n⏰ 라운드 종료까지 ((time))초",
+        label_game_info: "🌈 정답이라고 생각하는 단어를 채팅으로 입력해보세요.\n⏰ 라운드 종료까지 ((time))초",
+        label_selecting: "((name))님이 주제를 선택하고 있습니다..\n⏰ ((time)) 초 후 다른 플레이어에게 선택권이 넘어갑니다.",
         label_answer: "정답은 ((answer))!",
         label_answer_player: "((name))님 정답!\n [ 정답: ((answer)) ]",
         text_answer: "정답"
@@ -47,9 +47,9 @@ const LocalizeContainer = {
         prompt_desc: "Please enter the answer to the question.",
         prompt_placeholder: "Please enter your answer.",
         label_wrong_text: "Wrong answer!",
-        label_game_ing: "The game is currently in progress. Please wait a moment.\n[ ((time)) seconds until round ends ]",
-        label_game_info: "Enter the word you think is the correct answer in chat.\n[ ((time)) seconds until round ends ]",
-        label_selecting: "((name)) is selecting a topic...\n [ The choice will pass to another player in ((time)) seconds. ]",
+        label_game_ing: "The game is currently in progress. Please wait a moment.\n⏰ ((time)) seconds until round ends",
+        label_game_info: "🌈 Enter the word you think is the correct answer in chat.\n⏰ ((time)) seconds until round ends",
+        label_selecting: "((name)) is selecting a topic...\n⏰ The choice will pass to another player in ((time)) seconds.",
         label_answer: "The correct answer is ((answer))!",
         label_answer_player: "((name))'s correct answer!\n [ Answer: ((answer)) ]",
         text_answer: "Correct answer"
@@ -67,9 +67,9 @@ const LocalizeContainer = {
         prompt_desc: "問題の答えを入力してください。",
         prompt_placeholder: "答えを入力してください。",
         label_wrong_text: "誤解です！",
-        label_game_ing: "現在ゲームが進行中です。しばらくお待ちください。\n[ ラウンド終了まで（(time))秒 ]",
-        label_game_info: "正解だと思う単語をチャットに入力してください。\n[ ラウンド終了まで((time))秒 ]",
-        label_selecting: "((name)) さんがトピックを選択しています。\n [ ((time)) 秒後、他のプレイヤーに選択権があります。]",
+        label_game_ing: "現在ゲームが進行中です。しばらくお待ちください。\n⏰ ラウンド終了まで（(time))秒",
+        label_game_info: "🌈 正解だと思う単語をチャットに入力してください。\n⏰ ラウンド終了まで((time))秒",
+        label_selecting: "((name)) さんがトピックを選択しています。\n ⏰ ((time)) 秒後、他のプレイヤーに選択権があります。",
         label_answer: "正解は((answer))!",
         label_answer_player: "((name)) 正解!\n [ 正解: ((answer)) ]",
         text_answer: "正解"
@@ -192,8 +192,10 @@ function initGame(player: ScriptPlayer) {
                     player.tag.selectWidget.destroy();
                     player.tag.selectWidget = null;
                 }
+                const playerId = player.id;
                 //@ts-ignore
                 player.showPrompt(LocalizeContainer[player.language].category_free, function (inputText) {
+                        if (_drawerId !== playerId) return;
                         if (inputText) {
                             _currentQuiz = inputText;
                             _currentCategory = DrawCategory.FREE;
@@ -281,7 +283,7 @@ function startGame() {
             //@ts-ignore
             localizeContainer: LocalizeContainer[player.language]
         })
-        
+
         //@ts-ignore
         player.tag.widget.onMessage.Add(function (player, data) {
             if (data.type == "sendDrawingData") {
@@ -318,46 +320,97 @@ function getCategoryDescription(key: keyof typeof DrawCategory): DrawCategory {
     return DrawCategory[key];
 }
 
-function showCorrectLabel(player: ScriptPlayer | null, key: string, correct = true) {
-    let str = "";
-    let emoji = "🌈 ";
-    let fontColor = "#270";
-    let color = "rgba(223, 242, 191, 0.8)";
-    let borderColor = "rgba(36, 241, 6, 0.46)";
-    let boxShadow = "box-shadow: 0px 0px 2px #259c08";
-    if (correct === false) {
-        emoji = "❌ ";
-        fontColor = "#D8000C";
-        color = "rgba(255, 186, 186, 0.8)";
-        borderColor = "rgba(241, 6, 6, 0.81)";
+function showLabelTypeF(player: ScriptPlayer, key: string, text1: string, text2: string) {
+    const isMobile = player.isMobile;
+    const topGap = isMobile ? 10 : -2; // 60px from the top on mobile and 48px on PC.
+    /**
+     * size-based @labelPercentWidth
+     * XL: isMobile ? 90 : 50;
+     * L: isMobile ? 80 : 40;
+     * M: isMobile ? 70 : 28;
+     * S: isMobile ? 60 : 20
+     */
+    const labelPercentWidth = isMobile ? 90 : 50;
+    const labelDisplayTime = 2000;
+
+    const parentStyle = `
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center;
+    `;
+
+    const firstRowStyle = `
+    font-size: ${isMobile ? "16px" : "18px"};
+    font-weight: 700; 
+    color: #FFEB3A;`;
+
+    const secondRowStyle = `
+    font-size: ${isMobile ? "16px" : "18px"};
+    font-weight: 700;
+    color: white;`;
+
+    const customLabelOption = {
+        key: key,
+        borderRadius: '12px',
+        fontOpacity: false,
+        padding: '8px',
     }
-    str = `<span
-		style="
-		color: ${fontColor};
-			position: absolute;
-			margin: auto;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			height: 75px;
-			width: 90%;
-			background-color: ${color};
-			border-radius: 5px;
-			border-style: solid;
-			border-color: ${borderColor};
-			border-width: 1px;
-			box-shadow: ${boxShadow};
-		"
-	>${emoji} ${key}</span>`;
-    if (player) {
-        if (!correct) {
-            player.showCenterLabel(key, 0xffcccc, 0xf12d06, 120, 1500);
-        } else {
-            player.showCustomLabel(str, 0xffffff, 0x000000, 0, 80, 1, 1500);
-        }
-    } else {
-        ScriptApp.showCustomLabel(str, 0xffffff, 0x000000, 0, 80, 1, 1500);
+
+    let htmlStr = `<span style="${parentStyle}">
+        <span style="${firstRowStyle}">${text1}</span>
+        <span style="${secondRowStyle}">${text2}</span>
+    </span>`;
+    //@ts-ignore
+    player.showCustomLabel(htmlStr, 0xffffff, 0x27262e, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
+}
+
+function showSubLabelTypeI(player: ScriptPlayer, key: string, text1: string) {
+    const isMobile = player.isMobile;
+    // 10 : -2 //  58 : 49;
+    const topGap = isMobile ? 76 : 76; // 모바일은 상단으로 부터 60px, pc는 48px이 되도록 설정한 값
+    /**
+     * 사이즈에 따른 @labelPercentWidth
+     * XL: isMobile ? 90 : 50;
+     * L: isMobile ? 80 : 40;
+     * M: isMobile ? 70 : 28;
+     * S: isMobile ? 60 : 20
+     */
+    const labelPercentWidth = isMobile ? 60 : 20;
+    const labelDisplayTime = 4000;
+
+    const parentStyle = `
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    `;
+
+    const firstRowStyle = `
+    font-size: ${isMobile ? "14px" : "18px"};
+    font-weight: 700; 
+    color: white;`;
+
+    const highlightSpanStyle = `
+    font-size: ${isMobile ? "14px" : "18px"};
+    font-weight: 700; 
+    color: #74FADA;
+    `;
+
+    const customLabelOption = {
+        key: key,
+        borderRadius: '12px',
+        fontOpacity: false,
+        padding: '8px',
     }
+
+    let htmlStr = `<span style="${parentStyle}">
+        <span style="${highlightSpanStyle}">${text1}</span>
+    </span>`;
+
+    //@ts-ignore
+    player.showCustomLabel(htmlStr, 0xffffff, 0x27262e, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
 
 let one_sec = 1;
@@ -369,12 +422,10 @@ function handleDrawerSelectionTimeout() {
     if (!drawerPlayer) return;
     drawerPlayer.tag.initCount--;
     for (const player of ScriptApp.players) {
-        showCorrectLabel(
-            player,
-            //@ts-ignore
-            LocalizeContainer[player.language].label_selecting.replace("((name))", drawerPlayer.name).replace("((time))", String(drawerPlayer.tag.initCount)));
+        //@ts-ignore
+        const text = LocalizeContainer[player.language].label_selecting.replace("((name))", drawerPlayer.name).replace("((time))", String(drawerPlayer.tag.initCount)).split("\n");
+        showLabelTypeF(player, "main", text[0], text[1]);
     }
-
 
     if (!_start && drawerPlayer.tag.initCount <= 0) {
         initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
@@ -386,15 +437,17 @@ function handleGameInProgress() {
     for (const player of ScriptApp.players) {
         if (player.tag.join) {
             //@ts-ignore
-            showCorrectLabel(player, LocalizeContainer[player.language].label_game_info.replace("((time))", String(_gameTime)));
+            const text = LocalizeContainer[player.language].label_game_info.replace("((time))", String(_gameTime)).split("\n");
+            showLabelTypeF(player, "main", text[0], text[1]);
             if (_gameTime <= 0) {
                 //@ts-ignore
-                ScriptApp.showCenterLabel(LocalizeContainer[player.language].label_answer.replace("((answer))", _currentQuiz), 0xffffff, 0x000000, 120, 4000);
+                showSubLabelTypeI(player, "sub", LocalizeContainer[player.language].label_answer.replace("((answer))", _currentQuiz))
                 initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)])
             }
         } else {
             //@ts-ignore
-            showCorrectLabel(player, LocalizeContainer[player.language].label_game_ing.replace("((time))", String(_gameTime)));
+            const text = LocalizeContainer[player.language].label_game_ing.replace("((time))", String(_gameTime)).split("\n");
+            showLabelTypeF(player, "main", text[0], text[1]);
         }
     }
 }
@@ -425,7 +478,7 @@ ScriptApp.onSay.Add((player, text) => {
             ScriptApp.playSound("correct.mp3", false, true);
             for (const otherPlayer of ScriptApp.players) {
                 //@ts-ignore
-                otherPlayer.showCenterLabel(LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz), 0xffffff, 0x000000, 120, 4000);
+                showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz))
             }
 
             initGame(player);
@@ -438,8 +491,9 @@ ScriptApp.onSay.Add((player, text) => {
             // }
         } else {
             //@ts-ignore
-            showCorrectLabel(player, `${LocalizeContainer[player.language].label_wrong_text}\n`, false)
-            player.playSound("incorrect.mp3", false, true);
+            showSubLabelTypeI(player, "sub", `${LocalizeContainer[player.language].label_wrong_text}`);
+            //@ts-ignore
+            player.playSound("incorrect.mp3", false, true, "wrong", 0.6);
         }
     }
 })
