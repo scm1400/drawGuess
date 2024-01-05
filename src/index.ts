@@ -123,6 +123,269 @@ const _quizDB: CategoryDB = {
     }
 }
 
+const GAME_ROOM_LOCATION_NAME_PREFIX = "GameRoom-";
+
+class GameRoomManager {
+    roomList: Record<number, GameRoom>;
+
+    constructor() {
+        this.roomList = {};
+        for (let num = 1; num <= 10; num++) {
+            const locationName = `${GAME_ROOM_LOCATION_NAME_PREFIX}${num}`;
+            if (ScriptMap.hasLocation(locationName)) {
+                //@ts-ignore
+                this.roomList[num] = new GameRoom(num, ScriptMap.getLocation(locationName));
+            }
+        }
+    }
+
+    getRoomByRoomNum(roomNum: number) {
+        return this.roomList[roomNum];
+    }
+
+    refreshGameLobbyWidget() {
+        for (let player of ScriptApp.players) {
+            if (player.tag.gameLobbyWidget) {
+                player.tag.gameLobbyWidget.sendMessage({
+                    type: "refreshGameLobbyWidget",
+                    roomList: this.roomList,
+                });
+            }
+        }
+    }
+}
+
+interface GameRoomPlayerInfo {
+    name: string;
+    title: string;
+    level: number;
+    abandonCount: number;
+    agreedKickPlayerIDs: String[];
+    isReady: boolean;
+}
+
+interface Coordinate {
+    x: number;
+    y: number;
+}
+
+const GAMEROOM_MAX_PLAYER_COUNT = 6;
+const GAMEROOM_WIDTH = 10;
+const GAMEROOM_HEIGHT = 10;
+
+let DEBUG = true;
+
+class GameRoom {
+    gameStarted: boolean;
+    // state
+    roomNum: number;
+    kickList: string[];
+    participatingPlayers: Record<string, GameRoomPlayerInfo>;
+    turnCount: number;
+
+    gameTime: number;
+
+    currentQuiz: string;
+    currentQuizCategory: string;
+
+    locationInstalledCoordinate: Coordinate;
+
+    constructor(roomNum: number, locationInstalledCoordinate: Coordinate) {
+        this.gameStarted = false;
+        this.roomNum = roomNum;
+        this.kickList = [];
+        this.participatingPlayers = {};
+        this.turnCount = 0;
+        this.currentQuiz = "";
+        this.currentQuizCategory = ""
+        this.gameTime = 0;
+        this.locationInstalledCoordinate = locationInstalledCoordinate;
+    }
+
+    handleJoinPlayer(player: ScriptPlayer) {
+        if (player.tag.kickUntil) {
+            //@ts-ignore
+            if (player.tag.kickUntil > Time.GetUtcTime()) {
+                player.showCenterLabel("강퇴를 당해서 30초간 게임에 참가할 수 없습니다.");
+                return;
+            }
+        }
+
+        if (this.getPlayerCount() > GAMEROOM_MAX_PLAYER_COUNT) {
+            player.showCenterLabel("인원이 가득 차서 참여 할 수 없습니다.");
+            return;
+        }
+
+        if (!player.tag.participatingRoomNum) {
+            player.tag.participatingRoomNum = this.roomNum;
+            this.participatingPlayers[player.id] = {
+                name: player.name,
+                title: player.isGuest ? "비로그인" : "로그인",
+                level: player.tag.level ?? 1,
+                abandonCount: player.tag.abandonCount ?? 0,
+                agreedKickPlayerIDs: [],
+                isReady: false
+            };
+            this.playSoundToPlayers("joinSound.mp3");
+            player.spawnAt(Math.floor(this.locationInstalledCoordinate.x + GAMEROOM_WIDTH / 2), Math.floor(this.locationInstalledCoordinate.y + GAMEROOM_HEIGHT / 2), 1);
+            this.sendMessageToPlayerWidget({
+                type: "join",
+                roomData: this,
+                id: player.id,
+            });
+
+            _gameRoomManager.refreshGameLobbyWidget();
+        }
+    }
+
+    playSoundToPlayers(fileName: string) {
+        for (const playerId of Object.keys(this.participatingPlayers)) {
+            const player = ScriptApp.getPlayerByID(playerId);
+            if (player) {
+                player.playSound(fileName, false, true);
+            }
+        }
+    }
+
+    handleLeavePlayer(player: ScriptPlayer, leaveMap = false) {
+        if (!this.validatePlayer(player)) return;
+        delete this.participatingPlayers[player.id];
+        if (!leaveMap) {
+            player.tag.participatingRoomNum = null;
+            player.spawnAtLocation("lobby", 1);
+        }
+    }
+
+    startGame() {
+        if (DEBUG) {
+            ScriptApp.sayToAll("게임 시작!")
+        }
+    }
+
+    handlePlayerToggleReady(player: ScriptPlayer) {
+        if (!this.validatePlayer(player)) return;
+        if (this.participatingPlayers[player.id].isReady) {
+            this.participatingPlayers[player.id].isReady = false;
+            this.sendMessageToPlayerWidget({
+                type: "cancel-ready",
+                id: player.id,
+            });
+        } else {
+            this.participatingPlayers[player.id].isReady = true;
+            this.sendMessageToPlayerWidget({
+                type: "ready",
+                id: player.id,
+            });
+            if (this.checkAllPlayerIsReady()) {
+                this.startGame();
+            }
+        }
+    }
+
+    checkAllPlayerIsReady() {
+        const playerCount = this.getPlayerCount();
+        let readyCount = 0;
+        for (const playerId of Object.keys(this.participatingPlayers)) {
+            const gameRoomPlayerStatus = this.participatingPlayers[playerId];
+            if (gameRoomPlayerStatus.isReady) readyCount++;
+        }
+
+        return playerCount === readyCount;
+    }
+
+    getPlayerCount() {
+        return Object.keys(this.participatingPlayers).length;
+    }
+
+    processPlayerKickVote(player: ScriptPlayer, targetId: string) {
+        if (!this.validatePlayer(player)) return;
+        let kickCount = 0;
+
+        if (this.participatingPlayers[player.id].agreedKickPlayerIDs.indexOf(targetId) === -1) {
+            this.participatingPlayers[player.id].agreedKickPlayerIDs.push(targetId)
+            this.sendMessageToPlayerWidget({
+                type: "kick",
+                id: targetId,
+            });
+        } else {
+            this.participatingPlayers[player.id].agreedKickPlayerIDs.splice(this.participatingPlayers[player.id].agreedKickPlayerIDs.indexOf(targetId), 1);
+            this.sendMessageToPlayerWidget({
+                type: "cancle-kick",
+                id: targetId,
+            });
+        }
+
+        //targetId 의 강퇴 투표 수 세기
+        for (const playerId of Object.keys(this.participatingPlayers)) {
+            const gameRoomPlayerStatus = this.participatingPlayers[playerId];
+            if (gameRoomPlayerStatus.agreedKickPlayerIDs.indexOf(targetId) > -1) {
+                kickCount++;
+            }
+        }
+
+        if (kickCount >= 3) {
+            const targetPlayer = ScriptApp.getPlayerByID(targetId);
+            if (targetPlayer) {
+                this.handleLeavePlayer(targetPlayer);
+            }
+        }
+    }
+
+    sendMessageToPlayerWidget(data: any) {
+        for (let id of Object.keys(this.participatingPlayers)) {
+            let player = ScriptApp.getPlayerByID(id);
+            if (!player) continue;
+            const widget = player.tag.gameLobbyWidget;
+            if (widget) {
+                switch (data?.type) {
+                    case "join":
+                        widget.sendMessage({
+                            type: "join",
+                            data: data,
+                        });
+                        break;
+                    case "ready":
+                        widget.sendMessage({
+                            type: "ready",
+                            id: data.id,
+                        });
+                        break;
+                    case "cancel-ready":
+                        widget.sendMessage({
+                            type: "cancel-ready",
+                            id: data.id,
+                        });
+                        break;
+                    case "kick":
+                        widget.sendMessage({
+                            type: "kick",
+                            id: data.id,
+                        });
+                        break;
+                    case "cancle-kick":
+                        widget.sendMessage({
+                            type: "cancle-kick",
+                            id: data.id,
+                        });
+                        break;
+                    case "leave":
+                        widget.sendMessage({
+                            type: "leave",
+                            id: data.id,
+                            kickList: data.kickList,
+                        });
+                        break;
+                }
+            }
+
+        }
+    }
+
+    private validatePlayer(player: ScriptPlayer) {
+        return this.roomNum === player.tag.participatingRoomNum && this.participatingPlayers.hasOwnProperty(player.id);
+    }
+}
+
 let _currentQuiz = "";
 let _currentCategory = "";
 let _drawerId = "";
@@ -131,6 +394,13 @@ let _creatorId = "";
 let _isMiniGame = false;
 let _gameTime = 0;
 
+let _gameRoomManager: GameRoomManager;
+
+ScriptApp.onInit.Add(() => {
+    if (!_gameRoomManager) {
+        _gameRoomManager = new GameRoomManager();
+    }
+})
 
 ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     player.tag = {};
@@ -140,14 +410,33 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
         player.setCameraTarget(70, 27, 0);
     }
 
+    // 미니게임으로 실행한 경우
     if (player.id == ScriptApp.creatorID) {
         _isMiniGame = true;
         //@ts-ignore
         _language = Language[player.language];
         initGame(player);
-    } else if (!_creatorId) {
-        _creatorId = player.id;
-        initGame(player);
+    }
+    // 노멀앱으로 실행한 경우
+    else if (!_creatorId) {
+        if (player.isMobile) {
+            player.tag.widget = player.showWidget("GameLobby.html", "top", 400, 350);
+            ScriptApp.putMobilePunch();
+        } else {
+            player.tag.widget = player.showWidget("GameLobby.html", "topright", 400, 350);
+        }
+        player.tag.gameLobbyWidget.sendMessage({
+            type: "init",
+            id: player.id,
+            isMobile: player.isMobile,
+            roomList: _gameRoomManager.roomList
+        });
+
+        // @ts-ignore
+        player.tag.gameLobbyWidget.onMessage.Add((player, data) => handleGameLobbyWidgetMessage(player, data))
+
+        // _creatorId = player.id;
+        // initGame(player);
     }
 });
 
@@ -159,6 +448,55 @@ ScriptApp.onLeavePlayer.Add(function (player) {
         }, 0.1)
     }
 })
+
+function handleGameLobbyWidgetMessage(player: ScriptPlayer, data: any) {
+    switch (data.type) {
+        case "join": {
+            if (player.tag.participatingRoomNum) {
+                player.showCenterLabel("이미 참여중입니다.", 0xffffff, 0x000000, 300, 5000);
+                return;
+            }
+
+            const gameRoom = _gameRoomManager.getRoomByRoomNum(parseInt(data.roomNum));
+            if (gameRoom.gameStarted) {
+                player.showCenterLabel("이미 게임을 시작했습니다.", 0xffffff, 0x000000, 300, 5000);
+                return;
+            }
+
+            gameRoom.handleJoinPlayer(player);
+        }
+
+            break;
+        case "ready": {
+            if (player.tag.participatingRoomNum) {
+                const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+                gameRoom.handlePlayerToggleReady(player);
+            }
+        }
+            break;
+        case "cancel-ready": {
+            if (player.tag.participatingRoomNum) {
+                const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+                gameRoom.handlePlayerToggleReady(player);
+            }
+        }
+            break;
+        case "kick": {
+            if (player.tag.participatingRoomNum) {
+                const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+                gameRoom.processPlayerKickVote(player, data.targetId)
+            }
+        }
+            break;
+        case "quit": {
+            if (player.tag.participatingRoomNum) {
+                const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+                gameRoom.handleLeavePlayer(player);
+            }
+        }
+            break;
+    }
+}
 
 function initGame(player: ScriptPlayer) {
     _start = false;
@@ -451,6 +789,7 @@ function handleGameInProgress() {
         }
     }
 }
+
 
 ScriptApp.onUpdate.Add((dt) => {
     if (one_sec > 0) {
