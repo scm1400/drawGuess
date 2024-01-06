@@ -250,10 +250,20 @@ class GameRoom {
     handleLeavePlayer(player: ScriptPlayer, leaveMap = false) {
         if (!this.validatePlayer(player)) return;
         delete this.participatingPlayers[player.id];
+        player.tag.gameLobbyWidget.sendMessage({
+            type: "playerLeaveNotify",
+            id: player.id,
+        })
+        this.sendMessageToPlayerWidget({
+            type: "playerLeaveNotify",
+            id: player.id,
+        });
         if (!leaveMap) {
             player.tag.participatingRoomNum = null;
             player.spawnAtLocation("lobby", 1);
         }
+
+        _gameRoomManager.refreshGameLobbyWidget();
     }
 
     startGame() {
@@ -327,6 +337,11 @@ class GameRoom {
             const targetPlayer = ScriptApp.getPlayerByID(targetId);
             if (targetPlayer) {
                 this.handleLeavePlayer(targetPlayer);
+                //@ts-ignore
+                player.tag.kickUntil = Time.GetUtcTime() + 30000;
+                targetPlayer.tag.gameLobbyWidget.sendMessage({
+                    type: "kicked",
+                });
             }
         }
     }
@@ -368,11 +383,12 @@ class GameRoom {
                             id: data.id,
                         });
                         break;
-                    case "leave":
+                    case "playerLeaveNotify":
                         widget.sendMessage({
-                            type: "leave",
+                            type: "playerLeaveNotify",
                             id: data.id,
-                            kickList: data.kickList,
+                            roomInfo: this,
+                            roomList: _gameRoomManager.roomList
                         });
                         break;
                 }
@@ -420,10 +436,10 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     // 노멀앱으로 실행한 경우
     else if (!_creatorId) {
         if (player.isMobile) {
-            player.tag.widget = player.showWidget("GameLobby.html", "top", 400, 350);
+            player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "top", 400, 350);
             ScriptApp.putMobilePunch();
         } else {
-            player.tag.widget = player.showWidget("GameLobby.html", "topright", 400, 350);
+            player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "topright", 400, 350);
         }
         player.tag.gameLobbyWidget.sendMessage({
             type: "init",
@@ -488,7 +504,7 @@ function handleGameLobbyWidgetMessage(player: ScriptPlayer, data: any) {
             }
         }
             break;
-        case "quit": {
+        case "leaveRoom": {
             if (player.tag.participatingRoomNum) {
                 const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
                 gameRoom.handleLeavePlayer(player);

@@ -322,7 +322,7 @@
                 <div class="header-player"></div>
                 <div class="header-run-count"></div>
                 <div></div>
-                <div class="quit" onclick="Quit()">나가기</div>
+                <div class="quit" onclick="LeaveRoom()">나가기</div>
             </div>
             <div class="li-header">
                 <div class="header-level">레벨</div>
@@ -357,14 +357,14 @@
 
     </div>
     <script>
-        let myID;
+        let _myID;
         let roomNum;
 
         window.addEventListener("message", (e) => {
             switch (e.data.type) {
                 case "init":
-                    if (myID === undefined) {
-                        myID = e.data.id;
+                    if (_myID === undefined) {
+                        _myID = e.data.id;
                     }
 
                     renderRoomList(e.data.roomList);
@@ -402,18 +402,12 @@
                     break;
                 case "join":
                     let data = e.data?.data;
-                    if (data.id == myID) {
+                    const participatingPlayers = data.roomData.participatingPlayers;
+                    if (data.id === _myID) {
                         document.querySelector(".container-ready").classList.add("hidden");
                         document.querySelector(".container").classList.remove("hidden");
-                        AppendList(data.roomData.players);
-                    } else {
-                        for (let playerData of data.roomData.players) {
-                            if (playerData.id == data.id) {
-                                AppendList(playerData);
-                                break;
-                            }
-                        }
                     }
+                    renderRoomInfo(participatingPlayers);
 
                     break;
                 case "ready":
@@ -423,10 +417,15 @@
                 case "cancel-ready":
                     document.getElementById(e.data.id).querySelector(".button-ready").classList.remove("ready");
                     break;
-                case "leave":
+                case "playerLeaveNotify":
                     //console.log(e.data);
-                    DeleteList(e.data.id);
-                    DecreaseKickCount(e.data.kickList);
+                    if (e.data.id === _myID) {
+                        document.querySelector(".container-ready").classList.remove("hidden");
+                        document.querySelector(".container").classList.add("hidden");
+                    } else {
+                        DeleteList(e.data.id);
+                        renderRoomInfo(e.data.roomInfo);
+                    }
                     break;
                 case "kick":
                     IncreaseKickCount(e.data.id);
@@ -452,12 +451,9 @@
         }
 
         function refreshRoomList(roomList) {
-            if (gameRooms[el.dataset.roomnum].start == true) {
-                el.querySelector(".button-join").classList.add("ing");
-                el.querySelector(".button-join").innerHTML = "게임중";
-            } else {
-                el.querySelector(".button-join").classList.remove("ing");
-                el.querySelector(".button-join").innerHTML = "참가";
+            document.getElementById("room-list").innerHTML = "";
+            for (const roomData of Object.values(roomList)) {
+                createRoomElement(roomData);
             }
         }
 
@@ -526,43 +522,40 @@
             }
         }
 
-        function AppendList(data) {
-            if (Array.isArray(data)) {
+        function renderRoomInfo(data) {
+            if (typeof data === 'object') {
                 document.querySelectorAll(".li").forEach((el) => {
                     el.remove()
                 })
-                for (let sd of data) {
-                    let listTemplate = `
-                        <div class="li" id=${sd.id}>
-                            <div class="level">${isNaN(sd.level) ? (sd.level == "비로그인 유저" ? "비로그인" : sd.level) : "Lv." + sd.level}</div>
-                            <div class="name">${sd.name}</div>
-                            <div class="run-count">${sd.runCount ? sd.runCount : 0}</div>
-                            <button onClick="Ready(this)" class="button-ready ${sd.ready ? "ready" : ""}"><span style="height: 100%;">준비</span></button>
+                for (let [id, playerInfo] of Object.entries(data)) {
+                    let kickCount = 0;
+                    for (let playerInfo2 of Object.values(data)) {
+                        if (playerInfo2.agreedKickPlayerIDs.indexOf(id) > -1) kickCount++
+                    }
+                    const innerHTML = `<div class="level">${playerInfo.title === "비로그인" ? "비로그인" : "Lv." + playerInfo.level}</div>
+                            <div class="name">${playerInfo.name}</div>
+                            <div class="run-count">${playerInfo.abandonCount ? playerInfo.abandonCount : 0}</div>
+                            <button onClick="Ready(this)" class="button-ready ${playerInfo.isReady ? "ready" : ""}"><span style="height: 100%;">준비</span></button>
                             <button onClick="Kick(this)" class="button-kick">
                                 <span style="height: 100%;">강퇴</span>
-                                <span style="height: 100%; padding-top: 4px;" class="kick-count">${sd.kickCount ? sd.kickCount : 0}</span>
-                            </button>
+                                <span style="height: 100%; padding-top: 4px;" class="kick-count">${kickCount}</span>
+                            </button>`;
+                    if (document.getElementById(id)) {
+                        document.getElementById(id).innerHTML = innerHTML;
+                    } else {
+                        let listTemplate = `
+                        <div class="li" id=${id}>
+                            ${innerHTML}
                         </div>`
-                    document.querySelector(".list").innerHTML += listTemplate;
+                        document.querySelector(".list").innerHTML += listTemplate;
+                    }
+
                 }
-            } else {
-                let listTemplate = `
-                        <div class="li" id=${data.id}>
-                            <div class="level">${isNaN(data.level) ? (data.level == "비로그인 유저" ? "비로그인" : data.level) : "Lv." + data.level}</div>
-                            <div class="name">${data.name}</div>
-                            <div class="run-count">${data.runCount ? data.runCount : 0}</div>
-                            <button onClick="Ready(this)" class="button-ready ${data.ready ? "ready" : ""}"><span style="height: 100%;">준비</span></button>
-                            <button onClick="Kick(this)" class="button-kick">
-                                <span style="height: 100%;">강퇴</span>
-                                <span style="height: 100%; padding-top: 4px;" class="kick-count">${data.kickCount ? data.kickCount : 0}</span>
-                            </button>
-                        </div>`
-                document.querySelector(".list").innerHTML += listTemplate;
             }
         }
 
-        function Quit() {
-            window.parent.postMessage({type: "quit"}, "*")
+        function LeaveRoom() {
+            window.parent.postMessage({type: "leaveRoom"}, "*")
         }
 
         function Kick(el) {
@@ -570,7 +563,7 @@
         }
 
         function Ready(el) {
-            if (el.parentElement.id == myID) {
+            if (el.parentElement.id === _myID) {
                 if (el.classList.contains("ready")) {
                     window.parent.postMessage({type: "cancel-ready"}, "*")
                 } else {
