@@ -260,7 +260,7 @@ class GameRoom {
         });
         if (!leaveMap) {
             player.tag.participatingRoomNum = null;
-            player.spawnAtLocation("lobby", 1);
+            player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
         }
 
         _gameRoomManager.refreshGameLobbyWidget();
@@ -412,6 +412,8 @@ let _gameTime = 0;
 
 let _gameRoomManager: GameRoomManager;
 
+const _spawnPoint = [17, 34];
+
 ScriptApp.onInit.Add(() => {
     if (!_gameRoomManager) {
         _gameRoomManager = new GameRoomManager();
@@ -435,6 +437,7 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     }
     // 노멀앱으로 실행한 경우
     else if (!_creatorId) {
+        player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
         if (player.isMobile) {
             player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "top", 400, 350);
             ScriptApp.putMobilePunch();
