@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
-    "strict": true,
     "noEmit": true,
-    "isolatedModules": true,
-    "types": ["zep-script"]
+    "isolatedModules": true
   }
 }

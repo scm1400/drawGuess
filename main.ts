@@ -29,6 +29,7 @@ const LocalizeContainer = {
         label_wrong_text: "오답입니다!",
         label_game_ing: "현재 게임이 진행중 입니다. 잠시만 기다려주세요.\n⏰ 라운드 종료까지 ((time))초",
         label_game_info: "🌈 정답이라고 생각하는 단어를 채팅으로 입력해보세요.\n⏰ 라운드 종료까지 ((time))초",
+        label_game_info_round: "🌈 정답이라고 생각하는 단어를 채팅으로 입력해보세요.\n⏰ ((round)) 라운드 종료까지 ((time))초",
         label_selecting: "((name))님이 주제를 선택하고 있습니다..\n⏰ ((time)) 초 후 다른 플레이어에게 선택권이 넘어갑니다.",
         label_answer: "정답은 ((answer))!",
         label_answer_player: "((name))님 정답!\n [ 정답: ((answer)) ]",
@@ -49,6 +50,7 @@ const LocalizeContainer = {
         label_wrong_text: "Wrong answer!",
         label_game_ing: "The game is currently in progress. Please wait a moment.\n⏰ ((time)) seconds until round ends",
         label_game_info: "🌈 Enter the word you think is the correct answer in chat.\n⏰ ((time)) seconds until round ends",
+        label_game_info_round: "🌈 Enter the word you think is the correct answer in chat.\n⏰ ((time)) seconds until ((round)) round ends",
         label_selecting: "((name)) is selecting a topic...\n⏰ The choice will pass to another player in ((time)) seconds.",
         label_answer: "The correct answer is ((answer))!",
         label_answer_player: "((name))'s correct answer!\n [ Answer: ((answer)) ]",
@@ -69,6 +71,7 @@ const LocalizeContainer = {
         label_wrong_text: "誤解です！",
         label_game_ing: "現在ゲームが進行中です。しばらくお待ちください。\n⏰ ラウンド終了まで（(time))秒",
         label_game_info: "🌈 正解だと思う単語をチャットに入力してください。\n⏰ ラウンド終了まで((time))秒",
+        label_game_info_round: "🌈 正解だと思う単語をチャットに入力してください。\n⏰ ((round))ラウンド終了まで((time))秒",
         label_selecting: "((name)) さんがトピックを選択しています。\n ⏰ ((time)) 秒後、他のプレイヤーに選択権があります。",
         label_answer: "正解は((answer))!",
         label_answer_player: "((name)) 正解!\n [ 正解: ((answer)) ]",
@@ -153,6 +156,33 @@ class GameRoomManager {
             }
         }
     }
+
+    resetGameRoom(roomNum: number) {
+        const gameRoom = this.getRoomByRoomNum(roomNum);
+        if (!gameRoom) return;
+        gameRoom.actionToRoomPlayers((player: ScriptPlayer) => {
+            if (player.tag.selectWidget) {
+                player.tag.selectWidget.destroy();
+                player.tag.selectWidget = null;
+            }
+            if (player.tag.canvasWidget) {
+                player.tag.canvasWidget.destroy();
+                player.tag.canvasWidget = null;
+            }
+            gameRoom.handleLeavePlayer(player);
+            showGameLobbyWidget(player);
+        })
+        //@ts-ignore
+        this.roomList[roomNum] = new GameRoom(roomNum, ScriptMap.getLocation(`${GAME_ROOM_LOCATION_NAME_PREFIX}${roomNum}`))
+
+        _gameRoomManager.refreshGameLobbyWidget();
+    }
+
+    handleOnUpdate() {
+        for (const gameRoom of Object.values(this.roomList)) {
+            gameRoom.handleOnUpdate();
+        }
+    }
 }
 
 interface GameRoomPlayerInfo {
@@ -175,18 +205,40 @@ const GAMEROOM_HEIGHT = 10;
 
 let DEBUG = true;
 
+const STATE = {
+    WAITING: 1000,
+    INIT: 2000,
+    PLAYING: 3000
+}
+
+class GamePlayInfo {
+    turnCount: number;
+    gameTime: number;
+    selectTimer: number;
+    currentQuiz: string;
+    currentQuizCategory: string;
+    drawerId: string;
+    state: number;
+
+    constructor() {
+        this.turnCount = 0;
+        this.currentQuiz = "";
+        this.currentQuizCategory = "";
+        this.gameTime = 0;
+        this.drawerId = "";
+        this.state = STATE.INIT;
+        this.selectTimer = 10;
+    }
+}
+
 class GameRoom {
     gameStarted: boolean;
     // state
     roomNum: number;
     kickList: string[];
     participatingPlayers: Record<string, GameRoomPlayerInfo>;
-    turnCount: number;
 
-    gameTime: number;
-
-    currentQuiz: string;
-    currentQuizCategory: string;
+    gamePlayInfo: GamePlayInfo;
 
     locationInstalledCoordinate: Coordinate;
 
@@ -195,14 +247,15 @@ class GameRoom {
         this.roomNum = roomNum;
         this.kickList = [];
         this.participatingPlayers = {};
-        this.turnCount = 0;
-        this.currentQuiz = "";
-        this.currentQuizCategory = ""
-        this.gameTime = 0;
+        this.gamePlayInfo = new GamePlayInfo();
         this.locationInstalledCoordinate = locationInstalledCoordinate;
     }
 
     handleJoinPlayer(player: ScriptPlayer) {
+        if (this.gameStarted) {
+            player.showCenterLabel("이미 게임을 시작했습니다");
+            return;
+        }
         if (player.tag.kickUntil) {
             //@ts-ignore
             if (player.tag.kickUntil > Time.GetUtcTime()) {
@@ -250,14 +303,18 @@ class GameRoom {
     handleLeavePlayer(player: ScriptPlayer, leaveMap = false) {
         if (!this.validatePlayer(player)) return;
         delete this.participatingPlayers[player.id];
-        player.tag.gameLobbyWidget.sendMessage({
-            type: "playerLeaveNotify",
-            id: player.id,
-        })
+        if (player.tag.gameLobbyWidget) {
+            player.tag.gameLobbyWidget.sendMessage({
+                type: "playerLeaveNotify",
+                id: player.id,
+            })
+        }
+
         this.sendMessageToPlayerWidget({
             type: "playerLeaveNotify",
             id: player.id,
         });
+
         if (!leaveMap) {
             player.tag.participatingRoomNum = null;
             player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
@@ -266,10 +323,164 @@ class GameRoom {
         _gameRoomManager.refreshGameLobbyWidget();
     }
 
+    actionToRoomPlayers(action: Function, exceptPlayerId = "") {
+        for (const id of Object.keys(this.participatingPlayers)) {
+            if (exceptPlayerId === id) continue;
+            const player = ScriptApp.getPlayerByID(id);
+            if (!player) continue;
+            action(player)
+        }
+    }
+
+    initGame() {
+        this.gameStarted = true;
+        this.gamePlayInfo.state = STATE.INIT;
+
+        if (this.gamePlayInfo.turnCount === 10) {
+            _gameRoomManager.resetGameRoom(this.roomNum);
+            return;
+        }
+        this.gamePlayInfo.turnCount++;
+        this.actionToRoomPlayers((player: ScriptPlayer) => {
+            if (player.tag.canvasWidget) {
+                player.tag.canvasWidget.destroy();
+                player.tag.canvasWidget = null;
+            }
+            if (player.tag.selectWidget) {
+                player.tag.selectWidget.destroy();
+                player.tag.selectWidget = null;
+            }
+            if (player.tag.gameLobbyWidget) {
+                player.tag.gameLobbyWidget.destroy();
+                player.tag.gameLobbyWidget = null;
+            }
+        })
+        const playerIdArr = Object.keys(this.participatingPlayers);
+        this.gamePlayInfo.drawerId = playerIdArr[Math.floor(Math.random() * playerIdArr.length)];
+        const drawer = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId);
+        this.gamePlayInfo.selectTimer = 10;
+        drawer.tag.selectWidget = drawer.showWidget("selectCategory.html", "middle", 360, 400);
+        drawer.tag.selectWidget.sendMessage({
+            type: "init",
+            //@ts-ignore
+            localizeContainer: LocalizeContainer[drawer.language]
+        })
+        //@ts-ignore
+        drawer.tag.selectWidget.onMessage.Add(function (player: ScriptPlayer, data) {
+            const type = data.type;
+            const gameRoom = _gameRoomManager.getRoomByRoomNum(drawer.tag.participatingRoomNum);
+            if (!gameRoom) return;
+            if (type == "selectCategory") {
+                let category = data.category;
+                if (category === "FREE") {
+                    if (player.tag.selectWidget) {
+                        player.tag.selectWidget.destroy();
+                        player.tag.selectWidget = null;
+                    }
+                    const playerId = player.id;
+                    //@ts-ignore
+                    player.showPrompt(LocalizeContainer[player.language].category_free, function (inputText) {
+                            if (_drawerId !== playerId) return;
+                            if (inputText) {
+                                gameRoom.gamePlayInfo.currentQuiz = inputText;
+                                gameRoom.gamePlayInfo.currentQuizCategory = DrawCategory.FREE;
+                                gameRoom.startGame();
+                            } else {
+                                gameRoom.initGame();
+                            }
+                        },
+                        //@ts-ignore
+                        {
+                            //@ts-ignore
+                            content: LocalizeContainer[player.language].prompt_desc, // 설명
+                            //@ts-ignore
+                            confirmVariant: 'primary', // 확인 버튼 색상 'primary' | 'alert'
+                            //@ts-ignore
+                            placeholder: LocalizeContainer[player.language].prompt_placeholder,// 입력칸의 placeholder
+                        }
+                    )
+                } else if (Object.keys(DrawCategory).indexOf(category) > 0) {
+                    if (player.tag.selectWidget) {
+                        player.tag.selectWidget.destroy();
+                        player.tag.selectWidget = null;
+                    }
+                    gameRoom.gamePlayInfo.currentQuizCategory = DrawCategory[category as keyof typeof DrawCategory];
+                    gameRoom.gamePlayInfo.currentQuiz = getRandomQuiz(category);
+                    gameRoom.startGame();
+                } else {
+                    if (!gameRoom.gameStarted) return;
+                    gameRoom.initGame();
+                }
+            } else if (type == "closeWidget") {
+                player.tag.selectWidget.destroy();
+                player.tag.selectWidget = null;
+                if (!gameRoom.gameStarted) return;
+                gameRoom.initGame();
+            }
+        })
+
+        _gameRoomManager.refreshGameLobbyWidget();
+    }
+
     startGame() {
         if (DEBUG) {
             ScriptApp.sayToAll("게임 시작!")
         }
+        this.gamePlayInfo.state = STATE.PLAYING;
+        ScriptApp.playSound("init.mp3", false, true);
+        this.gamePlayInfo.gameTime = _GAMETIME;
+
+        const drawerName = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId).name;
+        this.actionToRoomPlayers((player: ScriptPlayer) => {
+            if (player.tag.canvasWidget) {
+                player.tag.canvasWidget.destroy();
+            }
+            if (player.tag.selectWidget) {
+                player.tag.selectWidget.destroy();
+                player.tag.selectWidget = null;
+            }
+            if (player.isMobile) {
+                player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
+            } else {
+                player.tag.canvasWidget = player.showWidget("canvas.html", "middleleft", 750, 500);
+            }
+
+            player.tag.canvasWidget.sendMessage({
+                type: "init",
+                //@ts-ignore
+                category: LocalizeContainer[player.language][this.gamePlayInfo.currentQuizCategory],
+                quiz: player.id === this.gamePlayInfo.drawerId ? this.gamePlayInfo.currentQuiz : "",
+                drawerName: drawerName,
+                isMobile: player.isMobile,
+                isDrawer: player.id === this.gamePlayInfo.drawerId,
+                //@ts-ignore
+                localizeContainer: LocalizeContainer[player.language]
+            })
+
+            //@ts-ignore
+            player.tag.canvasWidget.onMessage.Add(function (player, data) {
+                const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+                ScriptApp.sayToAll("11");
+                if (!gameRoom) return;
+                if (data.type == "sendDrawingData") {
+                    ScriptApp.sayToAll("12");
+                    gameRoom.actionToRoomPlayers((player: ScriptPlayer) => {
+                        if (player.tag.canvasWidget) {
+                            data.type = "drawingNotify";
+                            player.tag.canvasWidget.sendMessage(data);
+                        }
+                    }, player.id);
+                } else if (data.type == "batchedDrawingData") {
+                    gameRoom.actionToRoomPlayers((player: ScriptPlayer) => {
+                        if (player.tag.canvasWidget) {
+                            data.type = "batchedDrawingData";
+                            player.tag.canvasWidget.sendMessage(data);
+                        }
+                    }, player.id);
+                }
+            });
+        })
+
     }
 
     handlePlayerToggleReady(player: ScriptPlayer) {
@@ -286,8 +497,8 @@ class GameRoom {
                 type: "ready",
                 id: player.id,
             });
-            if (this.checkAllPlayerIsReady()) {
-                this.startGame();
+            if (this.getPlayerCount() >= 2 && this.checkAllPlayerIsReady()) {
+                this.initGame();
             }
         }
     }
@@ -397,6 +608,46 @@ class GameRoom {
         }
     }
 
+    handleOnUpdate() {
+        if (!this.gameStarted) return;
+        if (this.gamePlayInfo.state === STATE.INIT) {
+            this.handleDrawerSelectionTimeout();
+        } else if (this.gamePlayInfo.state === STATE.PLAYING) {
+            this.handleGameInProgress();
+        }
+    }
+
+    private handleDrawerSelectionTimeout() {
+        const drawerPlayer = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId);
+
+        if (!drawerPlayer) return;
+        this.gamePlayInfo.selectTimer--;
+
+        this.actionToRoomPlayers((player) => {
+            //@ts-ignore
+            const text = LocalizeContainer[player.language].label_selecting.replace("((name))", drawerPlayer.name).replace("((time))", String(this.gamePlayInfo.selectTimer)).split("\n");
+            showLabelTypeF(player, "main", text[0], text[1]);
+        })
+
+        if (this.gamePlayInfo.state === STATE.INIT && this.gamePlayInfo.selectTimer <= 0) {
+            this.initGame();
+        }
+    }
+
+    private handleGameInProgress() {
+        this.gamePlayInfo.gameTime--;
+        this.actionToRoomPlayers((player) => {
+            //@ts-ignore
+            const text = LocalizeContainer[player.language].label_game_info_round.replace("((time))", String(this.gamePlayInfo.gameTime)).replace("((round))", this.gamePlayInfo.turnCount).split("\n");
+            showLabelTypeF(player, "main", text[0], text[1]);
+            if (this.gamePlayInfo.gameTime <= 0) {
+                //@ts-ignore
+                showSubLabelTypeI(player, "sub", LocalizeContainer[player.language].label_answer.replace("((answer))", this.gamePlayInfo.currentQuiz))
+                this.initGame();
+            }
+        })
+    }
+
     private validatePlayer(player: ScriptPlayer) {
         return this.roomNum === player.tag.participatingRoomNum && this.participatingPlayers.hasOwnProperty(player.id);
     }
@@ -438,35 +689,49 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     // 노멀앱으로 실행한 경우
     else if (!_creatorId) {
         player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
-        if (player.isMobile) {
-            player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "top", 400, 350);
-            ScriptApp.putMobilePunch();
-        } else {
-            player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "topright", 400, 350);
-        }
-        player.tag.gameLobbyWidget.sendMessage({
-            type: "init",
-            id: player.id,
-            isMobile: player.isMobile,
-            roomList: _gameRoomManager.roomList
-        });
-
-        // @ts-ignore
-        player.tag.gameLobbyWidget.onMessage.Add((player, data) => handleGameLobbyWidgetMessage(player, data))
-
-        // _creatorId = player.id;
-        // initGame(player);
+        showGameLobbyWidget(player);
     }
 });
 
 ScriptApp.onLeavePlayer.Add(function (player) {
-    if (_drawerId === player.id) {
-        ScriptApp.runLater(() => {
-            initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
+    if (_isMiniGame) {
+        if (_drawerId === player.id) {
+            ScriptApp.runLater(() => {
+                initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
+            }, 0.1)
+        }
+    } else {
+        if (player.tag.participatingRoomNum) {
+            const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+            if (!gameRoom) return;
+            gameRoom.handleLeavePlayer(player, true);
 
-        }, 0.1)
+            if (gameRoom.gameStarted && gameRoom.gamePlayInfo.drawerId === player.id) {
+                ScriptApp.runLater(() => {
+                    gameRoom.initGame();
+                }, 0.1)
+            }
+        }
     }
 })
+
+function showGameLobbyWidget(player) {
+    if (player.isMobile) {
+        player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "top", 400, 350);
+        ScriptApp.putMobilePunch();
+    } else {
+        player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "topright", 400, 350);
+    }
+    player.tag.gameLobbyWidget.sendMessage({
+        type: "init",
+        id: player.id,
+        isMobile: player.isMobile,
+        roomList: _gameRoomManager.roomList
+    });
+
+    // @ts-ignore
+    player.tag.gameLobbyWidget.onMessage.Add((player, data) => handleGameLobbyWidgetMessage(player, data))
+}
 
 function handleGameLobbyWidgetMessage(player: ScriptPlayer, data: any) {
     switch (data.type) {
@@ -521,9 +786,9 @@ function initGame(player: ScriptPlayer) {
     _start = false;
     for (let player of ScriptApp.players) {
         player.tag.join = false;
-        if (player.tag.widget) {
-            player.tag.widget.destroy();
-            player.tag.widget = null;
+        if (player.tag.canvasWidget) {
+            player.tag.canvasWidget.destroy();
+            player.tag.canvasWidget = null;
         }
         if (player.tag.selectWidget) {
             player.tag.selectWidget.destroy();
@@ -532,7 +797,7 @@ function initGame(player: ScriptPlayer) {
     }
 
     _drawerId = player.id;
-    player.tag.initCount = 10;
+    this.gamePlayInfo.selectTimer = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
     player.tag.selectWidget.sendMessage({
         type: "init",
@@ -569,6 +834,7 @@ function initGame(player: ScriptPlayer) {
                     {
                         //@ts-ignore
                         content: LocalizeContainer[player.language].prompt_desc, // 설명
+                        //@ts-ignore
                         confirmVariant: 'primary', // 확인 버튼 색상 'primary' | 'alert'
                         //@ts-ignore
                         placeholder: LocalizeContainer[player.language].prompt_placeholder,// 입력칸의 placeholder
@@ -616,20 +882,20 @@ function startGame() {
     for (const player of ScriptApp.players) {
         if (!player) continue;
         player.tag.join = true;
-        if (player.tag.widget) {
-            player.tag.widget.destroy();
+        if (player.tag.canvasWidget) {
+            player.tag.canvasWidget.destroy();
         }
         if (player.tag.selectWidget) {
             player.tag.selectWidget.destroy();
             player.tag.selectWidget = null;
         }
         if (player.isMobile) {
-            player.tag.widget = player.showWidget("canvas.html", "sidebar", 750, 500);
+            player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
         } else {
-            player.tag.widget = player.showWidget("canvas.html", "middleleft", 750, 500);
+            player.tag.canvasWidget = player.showWidget("canvas.html", "middleleft", 750, 500);
         }
 
-        player.tag.widget.sendMessage({
+        player.tag.canvasWidget.sendMessage({
             type: "init",
             //@ts-ignore
             category: LocalizeContainer[_language][_currentCategory],
@@ -642,21 +908,21 @@ function startGame() {
         })
 
         //@ts-ignore
-        player.tag.widget.onMessage.Add(function (player, data) {
+        player.tag.canvasWidget.onMessage.Add(function (player, data) {
             if (data.type == "sendDrawingData") {
                 for (const p of ScriptApp.players) {
                     if (p === player) continue;
-                    if (p.tag.widget) {
+                    if (p.tag.canvasWidget) {
                         data.type = "drawingNotify";
-                        p.tag.widget.sendMessage(data);
+                        p.tag.canvasWidget.sendMessage(data);
                     }
                 }
             } else if (data.type == "batchedDrawingData") {
                 for (const p of ScriptApp.players) {
                     if (p === player) continue;
-                    if (p.tag.widget) {
+                    if (p.tag.canvasWidget) {
                         data.type = "batchedDrawingData";
-                        p.tag.widget.sendMessage(data);
+                        p.tag.canvasWidget.sendMessage(data);
                     }
                 }
             }
@@ -815,11 +1081,18 @@ ScriptApp.onUpdate.Add((dt) => {
         one_sec -= dt;
         if (one_sec < 0) {
             one_sec = 1;
-            if (!_start) {
-                handleDrawerSelectionTimeout();
+            if (_isMiniGame) {
+                if (!_start) {
+                    handleDrawerSelectionTimeout();
+                } else {
+                    handleGameInProgress();
+                }
             } else {
-                handleGameInProgress();
+                if (_gameRoomManager) {
+                    _gameRoomManager.handleOnUpdate();
+                }
             }
+
         }
     }
 });
@@ -829,29 +1102,43 @@ ScriptApp.onSay.Add((player, text) => {
         startGame();
     }
 
-    if (_start === true) {
-        if (player.id === _drawerId) return;
-        if (text === _currentQuiz || text === String(_currentQuiz).toLowerCase() || text === String(_currentQuiz).toUpperCase()) {
-            _start = false;
-            ScriptApp.playSound("correct.mp3", false, true);
-            for (const otherPlayer of ScriptApp.players) {
-                //@ts-ignore
-                showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz))
-            }
+    if (_isMiniGame) {
+        if (_start === true) {
+            if (player.id === _drawerId) return;
+            if (text === _currentQuiz || text === String(_currentQuiz).toLowerCase() || text === String(_currentQuiz).toUpperCase()) {
+                _start = false;
+                ScriptApp.playSound("correct.mp3", false, true);
+                for (const otherPlayer of ScriptApp.players) {
+                    //@ts-ignore
+                    showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz))
+                }
 
-            initGame(player);
-            // for (const player of ScriptApp.players) {
-            //     if (!player) continue;
-            //     if (player.tag.widget) {
-            //         player.tag.widget.destroy();
-            //         player.tag.widget = null;
-            //     }
-            // }
+                initGame(player);
+            } else {
+                //@ts-ignore
+                showSubLabelTypeI(player, "sub", `${LocalizeContainer[player.language].label_wrong_text}`);
+                //@ts-ignore
+                player.playSound("incorrect.mp3", false, true, "wrong", 0.6);
+            }
+        }
+    } else {
+        if (!player.tag.participatingRoomNum) return;
+        const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
+        if (!gameRoom || !gameRoom.gameStarted) return;
+        if (gameRoom.gamePlayInfo.drawerId === player.id) return;
+
+        if (text === gameRoom.gamePlayInfo.currentQuiz || text === String(gameRoom.gamePlayInfo.currentQuiz).toLowerCase() || text === String(gameRoom.gamePlayInfo.currentQuiz).toUpperCase()) {
+            ScriptApp.playSound("correct.mp3", false, true);
+            gameRoom.actionToRoomPlayers((player) => {
+                showSubLabelTypeI(player, "sub", LocalizeContainer[player.language].label_answer_player.replace("((name))", player.name).replace("((answer))", gameRoom.gamePlayInfo.currentQuiz))
+            })
+            gameRoom.initGame();
         } else {
             //@ts-ignore
             showSubLabelTypeI(player, "sub", `${LocalizeContainer[player.language].label_wrong_text}`);
             //@ts-ignore
-            player.playSound("incorrect.mp3", false, true, "wrong", 0.6);
+            gameRoom.playSoundToPlayers("incorrect.mp3")
         }
     }
+
 })
