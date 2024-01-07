@@ -356,8 +356,9 @@ class GameRoom {
             }
         })
         const playerIdArr = Object.keys(this.participatingPlayers);
-        this.gamePlayInfo.drawerId = drawerId ? drawerId : playerIdArr[Math.floor(Math.random() * playerIdArr.length)];
+        this.gamePlayInfo.drawerId = drawerId || playerIdArr[Math.floor(Math.random() * playerIdArr.length)];
         const drawer = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId);
+        if (!drawer) this.initGame();
         this.gamePlayInfo.selectTimer = 10;
         drawer.tag.selectWidget = drawer.showWidget("selectCategory.html", "middle", 360, 400);
         drawer.tag.selectWidget.sendMessage({
