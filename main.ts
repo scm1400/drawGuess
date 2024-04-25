@@ -137,7 +137,7 @@ class GameRoomManager {
             const locationName = `${GAME_ROOM_LOCATION_NAME_PREFIX}${num}`;
             if (ScriptMap.hasLocation(locationName)) {
                 //@ts-ignore
-                this.roomList[num] = new GameRoom(num, ScriptMap.getLocation(locationName));
+                this.roomList[num] = new GameRoom(num, locationName);
             }
         }
     }
@@ -173,7 +173,7 @@ class GameRoomManager {
             showGameLobbyWidget(player);
         })
         //@ts-ignore
-        this.roomList[roomNum] = new GameRoom(roomNum, ScriptMap.getLocation(`${GAME_ROOM_LOCATION_NAME_PREFIX}${roomNum}`))
+        this.roomList[roomNum] = new GameRoom(roomNum, `${GAME_ROOM_LOCATION_NAME_PREFIX}${roomNum}`);
 
         _gameRoomManager.refreshGameLobbyWidget();
     }
@@ -185,6 +185,7 @@ class GameRoomManager {
     }
 }
 
+
 interface GameRoomPlayerInfo {
     name: string;
     title: string;
@@ -194,9 +195,12 @@ interface GameRoomPlayerInfo {
     isReady: boolean;
 }
 
-interface Coordinate {
+interface LocationInfo {
     x: number;
     y: number;
+    width: number;
+    height: number;
+    label: String;
 }
 
 const GAMEROOM_MAX_PLAYER_COUNT = 6;
@@ -240,15 +244,16 @@ class GameRoom {
 
     gamePlayInfo: GamePlayInfo;
 
-    locationInstalledCoordinate: Coordinate;
+    locationInfo: LocationInfo;
 
-    constructor(roomNum: number, locationInstalledCoordinate: Coordinate) {
+    constructor(roomNum: number, locationName: String) {
         this.gameStarted = false;
         this.roomNum = roomNum;
         this.kickList = [];
         this.participatingPlayers = {};
         this.gamePlayInfo = new GamePlayInfo();
-        this.locationInstalledCoordinate = locationInstalledCoordinate;
+        //@ts-ignore
+        this.locationInfo = ScriptMap.getLocationList(locationName)[0];
     }
 
     handleJoinPlayer(player: ScriptPlayer) {
@@ -280,12 +285,14 @@ class GameRoom {
                 isReady: false
             };
             this.playSoundToPlayers("joinSound.mp3");
-            player.spawnAt(Math.floor(this.locationInstalledCoordinate.x + GAMEROOM_WIDTH / 2), Math.floor(this.locationInstalledCoordinate.y + GAMEROOM_HEIGHT / 2), 1);
+            player.spawnAt(Math.floor(this.locationInfo.x + 1), Math.floor(this.locationInfo.y + this.locationInfo.height / 2), 1);
             this.sendMessageToPlayerWidget({
                 type: "join",
                 roomData: this,
                 id: player.id,
             });
+
+            player.setCameraTarget( this.locationInfo.x + this.locationInfo.width, this.locationInfo.y + this.locationInfo.height/2, 0 );
 
             _gameRoomManager.refreshGameLobbyWidget();
         }
@@ -318,6 +325,9 @@ class GameRoom {
         if (!leaveMap) {
             player.tag.participatingRoomNum = null;
             player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
+            //@ts-ignore
+            player.setCameraTarget("");
+            player.sendUpdated();
         }
 
         _gameRoomManager.refreshGameLobbyWidget();
@@ -358,7 +368,10 @@ class GameRoom {
         const playerIdArr = Object.keys(this.participatingPlayers);
         this.gamePlayInfo.drawerId = drawerId || playerIdArr[Math.floor(Math.random() * playerIdArr.length)];
         const drawer = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId);
-        if (!drawer) this.initGame();
+        if (!drawer) {
+            this.initGame();
+            return;
+        }
         this.gamePlayInfo.selectTimer = 10;
         drawer.tag.selectWidget = drawer.showWidget("selectCategory.html", "middle", 360, 400);
         drawer.tag.selectWidget.sendMessage({
@@ -443,7 +456,7 @@ class GameRoom {
             if (player.isMobile) {
                 player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
             } else {
-                player.tag.canvasWidget = player.showWidget("canvas.html", "middleleft", 750, 500);
+                player.tag.canvasWidget = player.showWidget("canvas.html", "middleright", 750, 500);
             }
 
             player.tag.canvasWidget.sendMessage({
@@ -668,7 +681,11 @@ ScriptApp.onInit.Add(() => {
     if (!_gameRoomManager) {
         _gameRoomManager = new GameRoomManager();
     }
+    //@ts-ignore
+    ScriptApp.enableFreeView = false;
+    ScriptApp.sendUpdated();
 })
+
 
 ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     player.tag = {};
@@ -891,7 +908,7 @@ function startGame() {
         if (player.isMobile) {
             player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
         } else {
-            player.tag.canvasWidget = player.showWidget("canvas.html", "middleleft", 750, 500);
+            player.tag.canvasWidget = player.showWidget("canvas.html", "middleright", 750, 500);
         }
 
         player.tag.canvasWidget.sendMessage({
