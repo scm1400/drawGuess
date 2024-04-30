@@ -561,7 +561,7 @@ class GameRoom {
             if (targetPlayer) {
                 this.handleLeavePlayer(targetPlayer);
                 //@ts-ignore
-                player.tag.kickUntil = Time.GetUtcTime() + 30000;
+                targetPlayer.tag.kickUntil = Time.GetUtcTime() + 30000;
                 targetPlayer.tag.gameLobbyWidget.sendMessage({
                     type: "kicked",
                 });
