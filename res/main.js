@@ -630,6 +630,9 @@ App.onLeavePlayer.Add(function (player) {
       }
     }
   }
+  if (App.playerCount === 0) {
+    sendPlayerCountDataToServer();
+  }
 });
 function showGameLobbyWidget(player) {
   if (player.isMobile) {
@@ -966,6 +969,7 @@ function handleGameInProgress() {
     }
   }
 }
+let _apiRequestDelay = 5;
 App.onUpdate.Add(dt => {
   if (one_sec > 0) {
     one_sec -= dt;
@@ -981,6 +985,16 @@ App.onUpdate.Add(dt => {
         if (_gameRoomManager) {
           _gameRoomManager.handleOnUpdate();
         }
+      }
+    }
+  }
+  if (_apiRequestDelay > 0) {
+    _apiRequestDelay -= dt;
+    if (_apiRequestDelay < 1) {
+      _apiRequestDelay = 5;
+      let playerCount = App.playerCount;
+      if (playerCount > 0) {
+        sendPlayerCountDataToServer();
       }
     }
   }
@@ -1028,3 +1042,12 @@ App.onSay.Add((player, text) => {
     }
   }
 });
+function sendPlayerCountDataToServer() {
+  App.httpPostJson("https://us-central1-server-for-zep-app.cloudfunctions.net/api/setOnlineUsers", {
+    Authorization: "zep-omok"
+  }, {
+    gameId: 'drawGuess',
+    channelId: App.mapHashID,
+    onlineUsers: App.playerCount
+  }, function (res) {});
+}
