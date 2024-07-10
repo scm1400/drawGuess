@@ -688,6 +688,7 @@ ScriptApp.onInit.Add(() => {
 
 
 ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
+    _apiRequestDelay = 3;
     player.tag = {};
 
     if (ScriptApp.mapHashID == "yPzLZ7") {
@@ -710,6 +711,8 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
 });
 
 ScriptApp.onLeavePlayer.Add(function (player) {
+    _apiRequestDelay = 3;
+    
     if (_isMiniGame) {
         if (_drawerId === player.id) {
             ScriptApp.runLater(() => {
@@ -1119,7 +1122,6 @@ ScriptApp.onUpdate.Add((dt) => {
     if (_apiRequestDelay > 0) {
         _apiRequestDelay -= dt;
         if (_apiRequestDelay < 1) {
-            _apiRequestDelay = 5;
             let playerCount = ScriptApp.playerCount;
             if (playerCount > 0) {
                 sendPlayerCountDataToServer();

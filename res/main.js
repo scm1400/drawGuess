@@ -592,6 +592,7 @@ App.onInit.Add(() => {
   App.sendUpdated();
 });
 App.onJoinPlayer.Add(function (player) {
+  _apiRequestDelay = 3;
   player.tag = {};
   if (App.mapHashID == "yPzLZ7") {
     //@ts-ignore
@@ -612,6 +613,7 @@ App.onJoinPlayer.Add(function (player) {
   }
 });
 App.onLeavePlayer.Add(function (player) {
+  _apiRequestDelay = 3;
   if (_isMiniGame) {
     if (_drawerId === player.id) {
       App.runLater(() => {
@@ -991,7 +993,6 @@ App.onUpdate.Add(dt => {
   if (_apiRequestDelay > 0) {
     _apiRequestDelay -= dt;
     if (_apiRequestDelay < 1) {
-      _apiRequestDelay = 5;
       let playerCount = App.playerCount;
       if (playerCount > 0) {
         sendPlayerCountDataToServer();
