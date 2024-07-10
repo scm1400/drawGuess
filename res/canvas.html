@@ -1,49 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>drawGuess 게임</title>
-    <link rel="stylesheet" type="text/css"
-          href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/typography.css">
-    <link rel="stylesheet" type="text/css" href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/color.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Game with Fabric.js</title>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = "https://cdn-static.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), { rel: "stylesheet", type: "text/css", href: newFontStylePath }));
+    </script>
     <style>
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
-        }
-
-        @font-face {
-            font-family: "Pretendard JP";
-            font-style: normal;
-            font-display: swap;
-            font-weight: 400;
-            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Regular.woff") format("woff");
-        }
-
-        @font-face {
-            font-family: "Pretendard JP";
-            font-style: normal;
-            font-display: swap;
-            font-weight: 500;
-            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Medium.woff") format("woff");
-        }
-
-        @font-face {
-            font-family: "Pretendard JP";
-            font-style: normal;
-            font-display: swap;
-            font-weight: 600;
-            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-SemiBold.woff") format("woff");
-        }
-
-        @font-face {
-            font-family: "Pretendard JP";
-            font-style: normal;
-            font-display: swap;
-            font-weight: 700;
-            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Bold.woff") format("woff");
         }
 
         * {
@@ -55,8 +28,36 @@
             color: #27262E;
         }
 
-        body {
+        label {
+            color: white;
+        }
 
+        button.tool {
+            border-radius: 4px;
+            border: none;
+        }
+
+        button.tool:hover {
+            box-shadow: inset 0 0 0 4px rgb(163 169 183);
+        }
+
+        button.tool.selected {
+            box-shadow: inset 0 0 0 4px rgb(0, 81, 255);
+        }
+
+        button.color {
+            border: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+        }
+
+        button.color:hover {
+            box-shadow: inset 0 0 0 2px rgb(163 169 183);
+        }
+
+        button.color.selected {
+            box-shadow: inset 0 0 0 2px rgb(0, 81, 255);
         }
 
         #widget {
@@ -93,39 +94,6 @@
             height: max-content;
         }
 
-        .mobile .tool > svg {
-            width: 24px;
-            height: 24px;
-        }
-
-        .mobile .draw-tools > .tool {
-            padding: 3px;
-        }
-
-        .draw-tools {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-        }
-
-        .mobile .draw-tools {
-            grid-template-columns: repeat(4, 1fr);
-        }
-
-        .draw-tools > .tool {
-            display: flex;
-            padding: 6px;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .tool.active {
-            background: #002bffa1;
-        }
-
         #canvas-wrapper {
             position: relative;
             height: max-content;
@@ -133,74 +101,28 @@
             flex-grow: 1;
         }
 
-        #main-canvas,
-        #preview-canvas {
-            cursor: crosshair;
+        #drawingCanvas {
             position: absolute;
             top: 0;
             left: 0;
             border-radius: 12px;
-            box-shadow: inset 0 0 5px 1px black;
             left: 50%;
-            transform: translateX(-50%);
+            border: 1px solid;
         }
 
-        .eraser-cousor {
-            pointer-events: none;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            transform: translate(-50%, -50%);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(3px);
-            background: rgba(255, 255, 255, 0.5);
-            position: fixed;
-            border-radius: 50%;
-            aspect-ratio: 1;
-            z-index: 9;
-            width: 20px;
-            cursor: none;
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .palette {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 4px;
-            /* grid-template-columns: repeat(6, 1fr); */
-            /* flex-grow: 1; */
-            /* height: 100%; */
-            width: 100%;
-        }
-
-        .mobile .palette {
-            gap: 4px;
-            grid-template-columns: repeat(4, 1fr);
-            flex-grow: 1;
-            grid-auto-rows: max-content;
-        }
-
-        .mobile .palette-color {
-            height: 24px;
-            width: 24px;
-        }
-
-        .palette-color {
-            cursor: pointer;
-            width: 100%;
-            aspect-ratio: 1/1;
-            border-radius: 4px;
-            box-shadow: inset 0 0 1px 1px black;
-        }
-
-        .palette-color.active {
-            border: 2px solid white;
-        }
 
         .quiz-wrapper {
             display: flex;
-            /* width: 600px; */
+            width: 600px;
             height: 400px;
             position: relative;
             background: white;
-            flex-grow: 1;
         }
 
         #category {
@@ -254,45 +176,20 @@
             box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5), 7px 7px 20px 0px rgba(0, 0, 0, .1), 4px 4px 5px 0px rgba(0, 0, 0, .1);
         }
 
-        .size-selector {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            justify-content: center;
+        .tool {
+            padding: 8px;
         }
 
-        .mobile .size-selector {
-            flex-direction: column;
+        .grid {
+            display: grid;
+            gap: 4px;
+            grid-template-columns: repeat(2, 1fr);
         }
 
-        .size-selector > div {
-            cursor: pointer;
-            border-radius: 999px;
-            background-color: white;
-        }
-
-        .size-selector > div.active {
-            background-color: deeppink;
-        }
-
-        .size-s {
-            width: 9px;
-            height: 9px;
-        }
-
-        .size-sm {
-            width: 12px;
-            height: 12px;
-        }
-
-        .size-m {
-            width: 18px;
-            height: 18px;
-        }
-
-        .size-l {
-            width: 24px;
-            height: 24px;
+        .grid-n {
+            display: grid;
+            gap: 2px;
+            grid-template-columns: repeat(8, 1fr);
         }
 
         .hidden {
@@ -302,698 +199,485 @@
 </head>
 
 <body>
-<div class="eraser-cousor hidden">
-</div>
-<div id="widget" class="hidden">
-    <div id="tools">
-        <div class="draw-tools">
-            <div class="tool active" data-tool="pencil">
-                <svg width="32px" height="32px" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"
-                     xml:space="preserve" fill="none"><g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g
-                            id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g
-                            id="SVGRepo_iconCarrier"><path d="m104.175 90.97-4.252 38.384 38.383-4.252L247.923 15.427V2.497L226.78-18.646h-12.93zm98.164-96.96 31.671 31.67" class="cls-1" style="fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" transform="translate(-77.923 40.646)"></path>
-                        <path d="m195.656 33.271-52.882 52.882"
-                              style="fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
-                              transform="translate(-77.923 40.646)">
-                        </path>
-                    </g>
-                </svg>
+    <div id="widget">
+        <div id="tools" class="controls">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <label for="penColor">색상</label>
+                <input type="color" id="penColor" value="#000000">
             </div>
-            <div class="tool" data-tool="eraser">
-                <svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                        <path d="M20.25 9.84C20.25 9.38 20.07 8.94 19.74 8.61L15.39 4.26C14.71 3.58 13.61 3.58 12.93 4.26L4.26 12.93C3.93 13.26 3.75 13.7 3.75 14.16C3.75 14.62 3.93 15.06 4.26 15.39L8.61 19.74C8.95 20.08 9.39 20.25 9.84 20.25C9.88 20.25 9.93 20.25 9.97 20.24C9.99 20.24 10 20.24 10.02 20.24H18.01C18.42 20.24 18.76 19.9 18.76 19.49C18.76 19.08 18.42 18.74 18.01 18.74H12.06L19.73 11.07C20.06 10.74 20.24 10.3 20.24 9.84H20.25ZM5.32 14.33C5.26 14.27 5.25 14.2 5.25 14.16C5.25 14.12 5.25 14.05 5.32 13.99L9.12 10.19L13.81 14.88L10.01 18.68C9.92 18.77 9.77 18.77 9.67 18.68L5.32 14.32V14.33ZM18.68 10.02L14.88 13.82L10.19 9.13L13.99 5.33C14.08 5.24 14.23 5.24 14.33 5.33L18.68 9.69C18.74 9.75 18.75 9.82 18.75 9.86C18.75 9.9 18.75 9.97 18.68 10.03V10.02Z"
-                              fill="#ffffff"></path>
-                    </g>
-                </svg>
+
+
+            <div class="grid-n">
+                <button class="color" data-color="#808080" style="background-color: #808080;"></button>
+                <button class="color" data-color="#ed1d25" style="background-color: #ed1d25;"></button>
+                <button class="color" data-color="#ff8028" style="background-color: #ff8028;"></button>
+                <button class="color" data-color="#fff201" style="background-color: #fff201;"></button>
+                <button class="color" data-color="#23b14d" style="background-color: #23b14d;"></button>
+                <button class="color" data-color="#01a2e8" style="background-color: #01a2e8;"></button>
+                <button class="color" data-color="#4049cc" style="background-color: #4049cc;"></button>
+                <button class="color" data-color="#a34aa4" style="background-color: #a34aa4;"></button>
+                <button class="color" data-color="#ffffff" style="background-color: #ffffff;"></button>
+                <button class="color" data-color="#c3c3c3" style="background-color: #c3c3c3;"></button>
+                <button class="color" data-color="#b97b58" style="background-color: #b97b58;"></button>
+                <button class="color" data-color="#ffaec9" style="background-color: #ffaec9;"></button>
+                <button class="color" data-color="#ffc90f" style="background-color: #ffc90f;"></button>
+                <button class="color" data-color="#b5e61e" style="background-color: #b5e61e;"></button>
+                <button class="color" data-color="#99d9ea" style="background-color: #99d9ea;"></button>
+                <button class="color" data-color="#c8bfe7" style="background-color: #c8bfe7;"></button>
             </div>
-            <div class="tool" data-tool="rectOutline">
-                <svg fill="#ffffff" width="32px" height="32px" viewBox="0 0 64 64" version="1.1"
-                     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve"
-                     xmlns:serif="http://www.serif.com/"
-                     style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"><g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier"> <rect id="Icons" x="-1152" y="-64" width="1280" height="800"
-                                                       style="fill:none;"></rect>
-                        <g id="Icons1" serif:id="Icons"> <g id="Strike"> </g>
-                            <g id="H1"> </g>
-                            <g id="H2"> </g>
-                            <g id="H3"> </g>
-                            <g id="list-ul"> </g>
-                            <g id="hamburger-1"> </g>
-                            <g id="hamburger-2"> </g>
-                            <g id="list-ol"> </g>
-                            <g id="list-task"> </g>
-                            <g id="trash"> </g>
-                            <g id="vertical-menu"> </g>
-                            <g id="horizontal-menu"> </g>
-                            <g id="sidebar-2"> </g>
-                            <g id="Pen"> </g>
-                            <g id="Pen1" serif:id="Pen"> </g>
-                            <g id="clock"> </g>
-                            <g id="external-link"> </g>
-                            <g id="hr"> </g>
-                            <g id="info"> </g>
-                            <g id="warning"> </g>
-                            <g id="plus-circle"> </g>
-                            <g id="minus-circle"> </g>
-                            <g id="vue"> </g>
-                            <g id="cog"> </g>
-                            <g id="logo"> </g>
-                            <g id="radio-check"> </g>
-                            <g id="eye-slash"> </g>
-                            <g id="eye"> </g>
-                            <g id="toggle-off"> </g>
-                            <path id="square"
-                                  d="M50.005,56l-35.989,0c-3.309,0 -5.995,-2.686 -5.995,-5.995l0,-36.011c0,-3.308 2.686,-5.995 5.995,-5.995l35.989,0c3.309,0 5.995,2.687 5.995,5.995l0,36.011c0,3.309 -2.686,5.995 -5.995,5.995Zm-0.993,-4.001c1.65,0 2.989,-1.339 2.989,-2.989l0,-34.021c0,-1.649 -1.339,-2.989 -2.989,-2.989l-34.003,0c-1.65,0 -2.989,1.34 -2.989,2.989l0,34.021c0,1.65 1.339,2.989 2.989,2.989l34.003,0Z"></path>
-                            <g id="shredder"> </g>
-                            <g id="spinner--loading--dots-" serif:id="spinner [loading, dots]"> </g>
-                            <g id="react"> </g>
-                            <g id="check-selected"> </g>
-                            <g id="turn-off"> </g>
-                            <g id="code-block"> </g>
-                            <g id="user"> </g>
-                            <g id="coffee-bean"> </g>
-                            <g id="coffee-beans"> <g id="coffee-bean1" serif:id="coffee-bean"> </g> </g>
-                            <g id="coffee-bean-filled"> </g>
-                            <g id="coffee-beans-filled"> <g id="coffee-bean2" serif:id="coffee-bean"> </g> </g>
-                            <g id="clipboard"> </g>
-                            <g id="clipboard-paste"> </g>
-                            <g id="clipboard-copy"> </g>
-                            <g id="Layer1"> </g> </g> </g></svg>
-            </div>
-            <div class="tool" data-tool="rect">
-                <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#ffffff">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                        <path d="M4.281 3h16.437A1.281 1.281 0 0 1 22 4.281v16.437A1.282 1.282 0 0 1 20.718 22H4.282A1.282 1.282 0 0 1 3 20.718V4.281A1.281 1.281 0 0 1 4.281 3z"></path>
-                        <path fill="none" d="M0 0h24v24H0z"></path>
-                    </g>
-                </svg>
-            </div>
-            <div class="tool" data-tool="circleOutline">
-                <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier"><title></title>
-                        <g id="Complete">
-                            <g id="Circle">
-                                <circle cx="12" cy="12" data-name="Circle" fill="none" id="Circle-2" r="10"
-                                        stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"
-                                        stroke-width="2"></circle>
-                            </g>
+
+            <label for="penWidth">펜 두께:</label>
+            <input type="range" id="penWidth" value="5" min="1" max="10">
+
+            <div class="grid">
+                <button id="selectMode" class="tool"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
+                        <path fill-rule="evenodd"
+                            d="M0 1.5C0 0.671573 0.671573 0 1.5 0H2.5C2.77614 0 3 0.223858 3 0.5C3 0.776142 2.77614 1 2.5 1H1.5C1.22386 1 1 1.22386 1 1.5V2.5C1 2.77614 0.776142 3 0.5 3C0.223858 3 0 2.77614 0 2.5V1.5ZM5 0.5C5 0.223858 5.22386 0 5.5 0H6.5C6.77614 0 7 0.223858 7 0.5C7 0.776142 6.77614 1 6.5 1H5.5C5.22386 1 5 0.776142 5 0.5ZM9 0.5C9 0.223858 9.22386 0 9.5 0H10.5C11.3284 0 12 0.671573 12 1.5V2.5C12 2.77614 11.7761 3 11.5 3C11.2239 3 11 2.77614 11 2.5V1.5C11 1.22386 10.7761 1 10.5 1H9.5C9.22386 1 9 0.776142 9 0.5ZM0.5 5C0.776142 5 1 5.22386 1 5.5V6.5C1 6.77614 0.776142 7 0.5 7C0.223858 7 0 6.77614 0 6.5V5.5C0 5.22386 0.223858 5 0.5 5ZM11.5 5C11.7761 5 12 5.22386 12 5.5V6.5C12 6.77614 11.7761 7 11.5 7C11.2239 7 11 6.77614 11 6.5V5.5C11 5.22386 11.2239 5 11.5 5ZM0.5 9C0.776142 9 1 9.22386 1 9.5V10.5C1 10.7761 1.22386 11 1.5 11H2.5C2.77614 11 3 11.2239 3 11.5C3 11.7761 2.77614 12 2.5 12H1.5C0.671574 12 0 11.3284 0 10.5V9.5C0 9.22386 0.223858 9 0.5 9ZM11.5 9C11.7761 9 12 9.22386 12 9.5V10.5C12 11.3284 11.3284 12 10.5 12H9.5C9.22386 12 9 11.7761 9 11.5C9 11.2239 9.22386 11 9.5 11H10.5C10.7761 11 11 10.7761 11 10.5V9.5C11 9.22386 11.2239 9 11.5 9ZM5 11.5C5 11.2239 5.22386 11 5.5 11H6.5C6.77614 11 7 11.2239 7 11.5C7 11.7761 6.77614 12 6.5 12H5.5C5.22386 12 5 11.7761 5 11.5Z"
+                            fill="black" fill-opacity="0.8956" />
+                    </svg>
+                </button>
+
+                <button id="pencilMode" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+                        <g clip-path="url(#clip0)">
+                            <path
+                                d="M14.3543 4.64644C14.5496 4.8417 14.5496 5.15828 14.3543 5.35355L5.44436 14.2635C5.14651 14.5613 4.77824 14.7791 4.37373 14.8966L0.63944 15.9809C0.463977 16.0319 0.274694 15.983 0.145756 15.8536C0.0168173 15.7241 -0.0312434 15.5347 0.0204046 15.3594L1.12988 11.5946C1.248 11.1938 1.46469 10.8289 1.76016 10.5335L10.6472 1.64645C10.8425 1.45118 11.159 1.45118 11.3543 1.64645L14.3543 4.64644Z"
+                                fill="#EECE82" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M12.3536 1.35355C12.5163 1.19085 12.8089 1 13.5 1C13.722 1 14.1136 1.11725 14.4489 1.38807C14.769 1.64659 15 2.01295 15 2.5C15 3.22404 14.6397 3.65324 14.2602 4.03277L14.0107 4.28226L11.7085 1.99858L12.3536 1.35355ZM13.3035 4.98936L4.73725 13.5557C4.55854 13.7344 4.33758 13.865 4.09487 13.9355L1.23784 14.7651L2.0891 11.8765C2.15997 11.636 2.28999 11.4171 2.46726 11.2399L11.0014 2.7057L13.3035 4.98936ZM14.3568 5.35029L14.9673 4.73988C15.3962 4.31095 16 3.63561 16 2.5C16 1.65135 15.5818 1.01771 15.0773 0.610147C14.5879 0.214897 13.9796 0 13.5 0C12.5911 0 12.0278 0.265137 11.6465 0.646441L10.6465 1.64644C10.6455 1.64738 10.6446 1.64832 10.6436 1.64927L1.76016 10.5328C1.46469 10.8282 1.248 11.193 1.12988 11.5938L0.0204046 15.3587C-0.0312434 15.5339 0.0168173 15.7234 0.145756 15.8529C0.274694 15.9823 0.463977 16.0311 0.63944 15.9802L4.37373 14.8958C4.77824 14.7784 5.14651 14.5606 5.44436 14.2628L14.3531 5.35398L14.3543 5.35281C14.3551 5.35198 14.356 5.35114 14.3568 5.35029Z"
+                                fill="black" fill-opacity="0.8956" />
                         </g>
-                    </g>
-                </svg>
+                        <defs>
+                            <clipPath id="clip0">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </button>
+                <button id="eraserMode" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+                        <path
+                            d="M8.76264 0.512563C9.44606 -0.170855 10.5541 -0.170853 11.2375 0.512564L15.4697 4.7448C16.1532 5.42821 16.1532 6.53625 15.4697 7.21967L8.50008 14.1893L7.79297 13.4822L2.50008 8.18934L1.79297 7.48223L8.76264 0.512563Z"
+                            fill="#F6AEAC" />
+                        <path d="M12.5 15.5H6" stroke="black" stroke-opacity="0.8956" stroke-linecap="round" />
+                        <path
+                            d="M2.5 7.5L8.5 13.5M0.883884 10.8839L5.11612 15.1161C5.60427 15.6043 6.39573 15.6043 6.88388 15.1161L15.1161 6.88388C15.6043 6.39573 15.6043 5.60427 15.1161 5.11612L10.8839 0.883884C10.3957 0.395728 9.60427 0.395727 9.11612 0.883883L0.883883 9.11612C0.395728 9.60427 0.395728 10.3957 0.883884 10.8839Z"
+                            stroke="black" stroke-opacity="0.8956" stroke-linejoin="round" />
+                    </svg>
+                </button>
+                <button id="fillMode" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+                        <g clip-path="url(#clip0)">
+                            <g clip-path="url(#clip1)">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M8.53549 1.94974L7.7322 1.14645C7.53694 0.951184 7.22036 0.951185 7.0251 1.14645L1.14642 7.02513C0.951154 7.22039 0.951154 7.53697 1.14642 7.73223L1.94971 8.53552L8.53549 1.94974ZM3.36394 9.94976L2.65683 9.24265L9.24262 2.65686L9.94973 3.36397L3.36394 9.94976Z"
+                                    fill="#005FB7" />
+                            </g>
+                            <path
+                                d="M11.7481 12.5659L13.5 9.5C13.9658 10.3152 14.8315 11.6514 15.2896 12.5468C15.4401 12.8409 15.5 13.1697 15.5 13.5C15.5 14 15 15.5 13.5 15.5C12 15.5 11.5 14 11.5 13.5C11.5 13.1723 11.5855 12.8504 11.7481 12.5659Z"
+                                fill="#FF6327" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M12.2322 5.64622L7.85354 1.26754C7.65828 1.07228 7.3417 1.07228 7.14643 1.26754L1.26775 7.14622C1.07249 7.34148 1.07249 7.65807 1.26775 7.85333L1.26775 8.56043H0.560648C-0.0251389 7.97465 -0.0251395 7.0249 0.560647 6.43911L6.43933 0.560433C7.02511 -0.0253535 7.97486 -0.0253522 8.56065 0.560434L12.9393 4.93911C13.5251 5.5249 13.5251 6.47465 12.9393 7.06043L7.06065 12.9391C6.47486 13.5249 5.52511 13.5249 4.93933 12.9391L0.560648 8.56043H1.26775L1.26775 7.85333L5.64643 12.232C5.8417 12.4273 6.15828 12.4273 6.35354 12.232L12.2322 6.35333C12.4275 6.15807 12.4275 5.84148 12.2322 5.64622Z"
+                                fill="black" fill-opacity="0.8956" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M3.14645 0.146447C3.34171 -0.0488155 3.65829 -0.0488155 3.85355 0.146447L6.85355 3.14645C7.04882 3.34171 7.04882 3.65829 6.85355 3.85355C6.65829 4.04882 6.34171 4.04882 6.14645 3.85355L3.14645 0.853553C2.95118 0.658291 2.95118 0.341709 3.14645 0.146447Z"
+                                fill="black" fill-opacity="0.8956" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M13.5 9C13.6794 9 13.8451 9.09614 13.9341 9.25193C14.0927 9.52938 14.3127 9.891 14.5508 10.2822C14.9683 10.9683 15.4412 11.7454 15.7348 12.319C15.9297 12.7001 16 13.1113 16 13.5C16 13.8622 15.8376 14.4626 15.4694 14.9781C15.0845 15.517 14.4452 16 13.5 16C12.5548 16 11.9155 15.517 11.5306 14.9781C11.1624 14.4626 11 13.8622 11 13.5C11 13.0853 11.1082 12.6778 11.3139 12.3178L13.0659 9.25193C13.1549 9.09614 13.3206 9 13.5 9ZM13.5081 10.4935L12.1822 12.8139C12.0628 13.0229 12 13.2594 12 13.5C12 13.6378 12.0876 14.0374 12.3444 14.3969C12.5845 14.733 12.9452 15 13.5 15C14.0548 15 14.4155 14.733 14.6556 14.3969C14.9124 14.0374 15 13.6378 15 13.5C15 13.228 14.9505 12.9816 14.8445 12.7745C14.5628 12.2239 14.1384 11.5279 13.7385 10.872C13.6604 10.7438 13.5832 10.6172 13.5081 10.4935Z"
+                                fill="black" fill-opacity="0.8956" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                            <clipPath id="clip1">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </button>
             </div>
-            <div class="tool" data-tool="circle">
-                <svg fill="#ffffff" width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                        <circle cx="16" cy="16" r="16"></circle>
-                    </g>
-                </svg>
-            </div>
-            <div class="tool" data-tool="fill">
-                <svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
+
+            <div class="grid">
+                <button id="drawRect" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none">
+                        <rect x="2.5" y="3.5" width="13" height="11" stroke="black" stroke-opacity="0.8956" />
+                    </svg>
+                </button>
+                <button id="drawTriangle" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none">
                         <path fill-rule="evenodd" clip-rule="evenodd"
-                              d="M18.2635 11.646L11.1924 4.57492L9.44588 6.32143L16.5169 13.3925L18.2635 11.646ZM3.41421 12.3531L8.03167 7.73565L15.1027 14.8067L10.4853 19.4242L3.41421 12.3531ZM17.2241 15.5138L19.3941 13.3438L19.4404 13.4385L20.0558 14.6984C19.831 15.6632 19.5913 16.3048 19.3973 16.8243C19.1664 17.4427 19 17.8882 19 18.5C19 19.6734 19.5 20.5 20.5 20.5C21.5 20.5 22 20 22 18.5C22 17.8882 21.8336 17.4427 21.6027 16.8243C21.4522 16.4215 21.2744 15.9453 21.0973 15.3019L21.3332 13.1064C21.4987 11.5654 21.4334 9.99227 20.4314 8.84284C19.9406 8.27981 19.5579 8.06042 19.0274 7.75634L19.0273 7.7563C18.8504 7.65487 18.657 7.54401 18.4376 7.40784C17.4574 6.79921 15.6368 5.54617 11.8306 2.39085C11.4332 2.06139 10.8503 2.08858 10.4853 2.4536L7.32456 5.61433L1.29289 11.646C0.902369 12.0365 0.902369 12.6697 1.29289 13.0602L9.77817 21.5455C10.1687 21.936 10.8019 21.936 11.1924 21.5455L17.2241 15.5138Z"
-                              fill="#ffffff"></path>
-                    </g>
-                </svg>
+                            d="M9 3L2 15H16L9 3ZM9 4.77778L3.55556 14.1111H14.4444L9 4.77778Z" fill="black"
+                            fill-opacity="0.8956" />
+                    </svg>
+                </button>
+                <button id="drawCircle" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none">
+                        <circle cx="9" cy="9" r="5.5" stroke="black" stroke-opacity="0.8956" />
+                    </svg>
+                </button>
+                <button id="drawLine" class="tool">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none">
+                        <line x1="3.35355" y1="3.14645" x2="14.6673" y2="14.4602" stroke="black"
+                            stroke-opacity="0.8956" />
+                    </svg>
+                </button>
             </div>
+
         </div>
-        <div class="palette">
-            <div class="palette-color active" style="background: black">
+        <div class="quiz-wrapper">
+            <div id="category">주제: 동물 | oo님 차례</div>
+            <div id="canvas-wrapper">
+                <div id="quiz" class="hidden">주제어: 토끼</div>
+                <canvas id="drawingCanvas" width="600" height="400"></canvas>
             </div>
-            <div class="palette-color" style="background: grey">
-            </div>
-            <div class="palette-color" style="background: #0000FF">
-            </div>
-            <div class="palette-color" style="background: #00FFFF">
-            </div>
-            <div class="palette-color" style="background: #008000">
-            </div>
-            <div class="palette-color" style="background: #808000">
-            </div>
-            <div class="palette-color" style="background: #FFA500">
-            </div>
-            <div class="palette-color" style="background: saddlebrown">
-            </div>
-            <div class="palette-color" style="background: red">
-            </div>
-            <div class="palette-color" style="background: #FF00FF">
-            </div>
-            <div class="palette-color" style="background: yellow">
-            </div>
-            <div class="palette-color" style="background: #800080">
-            </div>
-        </div>
-        <div class="size-selector">
-            <div class="size-s active" onclick="selectSize(this)"></div>
-            <div class="size-sm" onclick="selectSize(this)"></div>
-            <div class="size-m" onclick="selectSize(this)"></div>
-            <div class="size-l" onclick="selectSize(this)"></div>
-        </div>
-    </div>
-    <div class="quiz-wrapper">
-        <div id="category">주제: 동물 | oo님 차례</div>
-        <div id="canvas-wrapper">
-            <div id="quiz" class="hidden">주제어: 토끼</div>
-            <canvas id="main-canvas" width="600px" height="400px"></canvas>
-            <canvas id="preview-canvas" width="600px" height="400px"></canvas>
         </div>
     </div>
 
-</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script>
+        // Initialize Fabric.js
+        const canvas = new fabric.Canvas('drawingCanvas');
 
-<script>
-    const mainCanvas = document.getElementById('main-canvas');
-    const mainContext = mainCanvas.getContext('2d');
-    mainContext.fillStyle = '#ffffff'; // 흰색
-    mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-    const previewCanvas = document.getElementById('preview-canvas');
-    const previewContext = previewCanvas.getContext('2d');
+        // Get control elements
+        const penColorInput = document.getElementById('penColor');
+        const penWidthInput = document.getElementById('penWidth');
+        const fillColorInput = document.getElementById('fillColor');
+        const fillModeButton = document.getElementById('fillMode');
+        const pencilModeButton = document.getElementById('pencilMode');
+        const selectModeButton = document.getElementById('selectMode');
+        const eraserModeButton = document.getElementById('eraserMode');
 
-    let batchedDrawingData = [];
-    let isDrawing = false;
-    let startX = 0;
-    let startY = 0;
-    let _localizeConatainer;
+        const drawRectButton = document.getElementById('drawRect');
+        const drawCircleButton = document.getElementById('drawCircle');
+        const drawLineButton = document.getElementById('drawLine');
+        const drawTriangleButton = document.getElementById('drawTriangle');
 
-    const eraserCursor = document.querySelector('.eraser-cousor');
+        let isDrawing = false;
+        let shapeType = null;
 
-    const animateCursor = (e) => {
-        if (_currentDrawType == DrawType.eraser) {
-            if (eraserCursor.classList.contains("hidden")) {
-                eraserCursor.classList.remove("hidden");
-            }
-            eraserCursor.style.left = `${e.pageX}px`;
-            eraserCursor.style.top = `${e.pageY}px`;
-        }
-    }
-    window.addEventListener('mousemove', animateCursor);
+        const debouncedSendDrawingData = debounce(sendDrawingData, 500);
 
-    document.querySelectorAll(".draw-tools > .tool").forEach((el) => {
-        el.onclick = (e) => {
-            document.querySelectorAll(".draw-tools > .tool").forEach((els) => {
-                els.classList.remove("active");
-            })
-            eraserCursor.classList.add("hidden");
-            const tool = el.dataset.tool;
-            if (Object.hasOwn(DrawType, tool)) {
-                el.classList.add("active");
-                _currentDrawType = DrawType[tool]
-            }
-
-        }
-    })
-
-    document.querySelectorAll(".palette > .palette-color").forEach((el) => {
-        el.onclick = (e) => {
-            document.querySelectorAll(".palette > .palette-color").forEach((els) => {
-                els.classList.remove("active");
-            })
-            el.classList.add("active");
-            const color = el.style.backgroundColor;
-            _currentColor = color;
-        }
-    })
-
-    const DrawType = {
-        pencil: 'pencil',
-        eraser: 'eraser',
-        line: 'line',
-        circle: 'circle',
-        circleOutline: 'circleOutline',
-        rect: 'rect',
-        rectOutline: 'rectOutline',
-        fill: 'fill'
-    };
-
-
-    let _currentDrawType = DrawType.pencil;
-    let _currentColor = 'black';
-    let _currentLineWidth = 3;
-
-    previewCanvas.addEventListener('mousedown', startDrawing);
-    previewCanvas.addEventListener('mousemove', draw);
-    previewCanvas.addEventListener('mouseup', endDrawing);
-    previewCanvas.addEventListener('mouseout', endDrawing);
-
-    // 모바일용 터치 이벤트 리스너 추가
-    previewCanvas.addEventListener('touchstart', function (event) {
-        // 여러 개의 터치 포인트가 있을 수 있으므로, 첫 번째 터치 포인트를 사용
-        const touch = event.touches[0];
-        // 마우스 이벤트에서의 좌표와 동일한 방식으로 터치의 x, y 좌표를 가져옴
-        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
-        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
-        startDrawing({offsetX, offsetY}); // 만약 startDrawing 함수가 좌표를 파라미터로 받는다면 이런 식으로 전달
-        event.preventDefault(); // 기본 스크롤 행동 등을 막기 위함
-    });
-
-    previewCanvas.addEventListener('touchmove', function (event) {
-        const touch = event.touches[0];
-        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
-        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
-        draw({offsetX, offsetY});
-        event.preventDefault();
-    });
-
-    previewCanvas.addEventListener('touchend', endDrawing);
-    previewCanvas.addEventListener('touchcancel', endDrawing);
-
-    function selectSize(el) {
-        document.querySelectorAll(".size-selector > div").forEach((el) => {
-            el.classList.remove("active");
-        })
-        el.classList.add("active");
-
-        let lineWidth = 3;
-        if (el.classList.contains("size-s")) {
-            lineWidth = 3;
-        } else if (el.classList.contains("size-sm")) {
-            lineWidth = 5;
-        } else if (el.classList.contains("size-m")) {
-            lineWidth = 10;
-        } else if (el.classList.contains("size-l")) {
-            lineWidth = 15;
+        function sendDrawingData() {
+            const drawingData = JSON.stringify(canvas);
+            window.postMessage({ type: 'drawingData', data: drawingData }, '*');
         }
 
-        _currentLineWidth = lineWidth;
-        // previewContext.lineWidth = lineWidth;
-        // mainContext.lineWidth = lineWidth;
-    }
-
-    function startDrawing(e) {
-        if (!_isDrawer) return;
-        isDrawing = true;
-        [startX, startY] = [e.offsetX, e.offsetY];
-
-        // if (_currentDrawType === DrawType.eraser) {
-        //     mainContext.globalCompositeOperation = 'destination-out';
-        //     mainContext
-        //     mainContext.beginPath();
-        //     mainContext.arc(startX, startY, _currentLineWidth / 2, 0, Math.PI * 2, false);
-        //     mainContext.fill();
-        //     mainContext.closePath();
-        // } else 
-        if (_currentDrawType === DrawType.fill) {
-            drawShape({
-                startX,
-                startY,
-            }, mainContext);
-        }
-    }
-
-    function draw(e) {
-        if (!isDrawing || _currentDrawType === DrawType.fill) return;
-        // console.log(1)
-        const currentX = e.offsetX;
-        const currentY = e.offsetY;
-
-        if (_currentDrawType === DrawType.eraser || _currentDrawType === DrawType.pencil) {
-            const drawingData = {
-                type: "sendDrawingData",
-                drawType: _currentDrawType,
-                startX,
-                startY,
-                currentX,
-                currentY,
-                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
-                lineWidth: _currentLineWidth
-            };
-
-            drawShape(drawingData, mainContext);
-            [startX, startY] = [currentX, currentY];
-            batchedDrawingData.push(drawingData);
-            if (batchedDrawingData.length > 30) {
-                window.parent.postMessage({type: 'batchedDrawingData', data: batchedDrawingData}, '*');
-                batchedDrawingData = [];
-            }
-        } else {
-            previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            const drawingData = {
-                type: "sendDrawingData",
-                drawType: _currentDrawType,
-                startX,
-                startY,
-                currentX,
-                currentY,
-                color: _currentColor,
-                lineWidth: _currentLineWidth
-            };
-            drawShape(drawingData, previewContext);
-        }
-    }
-
-
-    function endDrawing(e) {
-        if (!isDrawing) return;
-        isDrawing = false;
-
-        const currentX = e.offsetX;
-        const currentY = e.offsetY;
-
-        if (_currentDrawType === DrawType.eraser || _currentDrawType === DrawType.pencil) {
-            if (batchedDrawingData.length > 30) {
-                window.parent.postMessage({type: 'batchedDrawingData', data: batchedDrawingData}, '*');
-                batchedDrawingData = [];
-            }
-
-            const drawingData = {
-                type: "sendDrawingData",
-                drawType: _currentDrawType,
-                startX,
-                startY,
-                currentX,
-                currentY,
-                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
-                lineWidth: _currentLineWidth
-            };
-            drawShape(drawingData, mainContext);
-
-        } else {
-            const drawingData = {
-                type: "sendDrawingData",
-                drawType: _currentDrawType,
-                startX,
-                startY,
-                currentX,
-                currentY,
-                color: _currentColor,
-                lineWidth: _currentLineWidth
-            };
-
-            drawShape(drawingData, mainContext);
-            window.parent.postMessage(drawingData, '*');
+        function enableDrawingMode() {
+            canvas.isDrawingMode = false;
+            canvas.defaultCursor = "url('https://www.cursor.cc/cursor/780/122/cursor.png'), auto";
+            canvas.freeDrawingCursor = "url('https://www.cursor.cc/cursor/780/122/cursor.png'), auto";
+            canvas.isDrawingMode = true;
+            canvas.selection = false;
+            canvas.forEachObject((obj) => obj.selectable = false);
+            canvas.freeDrawingBrush.color = penColorInput.value;
+            canvas.freeDrawingBrush.width = parseInt(penWidthInput.value, 10);
+            canvas.on('path:created', debouncedSendDrawingData);
         }
 
-        previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-    }
-
-
-    function drawShape(data, context) {
-        const {drawType, startX, startY, currentX, currentY, color, lineWidth} = data;
-
-        context.strokeStyle = color;
-        context.fillStyle = color;
-        context.lineWidth = DrawType.eraser ? lineWidth * 2 : lineWidth;
-
-        if (drawType !== DrawType.eraser) {
-            context.globalCompositeOperation = 'source-over';
+        function disableDrawingMode() {
+            canvas.isDrawingMode = false;
+            canvas.off('path:created', debouncedSendDrawingData);
         }
 
-        switch (drawType) {
-            case DrawType.line: {
-                context.beginPath();
-                context.moveTo(startX, startY);
-                context.lineTo(currentX, currentY);
-                context.stroke();
-                context.closePath();
-                break;
-            }
-            case DrawType.circle: {
-                const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)) / 2;
-                context.beginPath();
-                context.arc((startX + currentX) / 2, (startY + currentY) / 2, radius, 0, 2 * Math.PI);
-                context.fill();
-                context.closePath();
-                break;
-            }
-            case DrawType.circleOutline: {
-                const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)) / 2;
-                context.beginPath();
-                context.arc((startX + currentX) / 2, (startY + currentY) / 2, radius, 0, 2 * Math.PI);
-                context.stroke();
-                context.closePath();
-                break;
-            }
-            case DrawType.rect: {
-                context.beginPath();
-                context.fillRect(startX, startY, currentX - startX, currentY - startY);
-                context.closePath();
-                break;
-            }
-            case DrawType.rectOutline: {
-                context.beginPath();
-                context.rect(startX, startY, currentX - startX, currentY - startY);
-                context.stroke();
-                context.closePath();
-                break;
-            }
-            case DrawType.fill: {
-                context.fillFlood(startX, startY, 32);
-                break;
-            }
-            case DrawType.pencil:
-            case DrawType.eraser: {
-                // context.globalCompositeOperation = drawType === DrawType.eraser ? 'destination-out' : 'source-over';
-                context.globalCompositeOperation = 'source-over';
-                context.fillStyle = DrawType.eraser ? 'white' : color;
-                context.lineJoin = 'round';
-                context.lineCap = 'round';
-                context.beginPath();
-                context.moveTo(startX, startY);
-                context.lineTo(currentX, currentY);
-                context.stroke();
-                context.closePath();
-                break;
-            }
+        function enableFillMode() {
+            canvas.defaultCursor = "url('https://www.cursor.cc/cursor/889/41/cursor.png'), auto";
+            canvas.isDrawingMode = false;
+            shapeType = null;
+
+            canvas.on('mouse:down', handleFill);
         }
-    }
 
-    let _isDrawer = false;
-    let _isMobile = false;
-    window.addEventListener('message', (event) => {
-        const data = event.data;
-        switch (data.type) {
-            case "init": {
-                _localizeConatainer = data.localizeContainer;
-                _isDrawer = data.isDrawer;
-                _isMobile = Boolean(data.isMobile);
-                document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
+        function handleFill(options) {
+            const pointer = canvas.getPointer(options.e);
+            const objects = canvas.getObjects();
+            let objectFound = false;
 
-                if (_isMobile) {
-                    document.getElementById("widget").classList.add("mobile");
-                    const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
-                    const chatHeight = 54;
-                    window.parent.postMessage({
-                        type: "WidgetRearrange",
-                        width: "100%",
-                        height: `calc(100% - ${rtcAndNotchHeight + chatHeight}px)`,
-                        top: -chatHeight + 'px',
-                        anchor: 'sidebar'
-                    }, "*")
-                    setTimeout(() => {
-                        const widget = document.getElementById("widget");
-                        const style = window.getComputedStyle(widget);
-                        const paddingLeft = parseFloat(style.paddingLeft);
-                        const paddingRight = parseFloat(style.paddingRight);
-                        const paddingTop = parseFloat(style.paddingTop);
-                        const paddingBottom = parseFloat(style.paddingBottom);
-                        const gap = parseFloat(style.gap);
-
-                        const contentWidth = widget.clientWidth - paddingLeft - paddingRight;
-                        const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
-
-                        document.getElementById("main-canvas").setAttribute("height", contentHeight + 'px');
-                        document.getElementById("main-canvas").setAttribute("width", contentWidth + 'px');
-
-                        document.getElementById("preview-canvas").setAttribute("height", contentHeight + 'px');
-                        document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
-                    }, 500)
+            for (const obj of objects) {
+                if (obj.containsPoint(pointer)) {
+                    obj.set('fill', penColorInput.value);
+                    objectFound = true;
+                    break;
                 }
-
-                if (_isDrawer) {
-                    document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
-                    document.getElementById("quiz").classList.remove("hidden");
-                } else {
-                    document.getElementById("tools").classList.add("hidden");
-                }
-
-                document.getElementById("widget").classList.remove("hidden");
-                break;
             }
-            case "drawingNotify": {
-                drawShape(data, mainContext);
-                break;
+
+            if (!objectFound) {
+                canvas.backgroundColor = penColorInput.value;
+                canvas.renderAll();
+            } else {
+                canvas.renderAll();
             }
-            case "batchedDrawingData": {
-                if (Array.isArray(event.data.data)) {
-                    for (const drawingData of event.data.data) {
-                        drawShape(drawingData, mainContext);
+
+            debouncedSendDrawingData();
+        }
+
+        function disableFillMode() {
+            canvas.defaultCursor = 'default';
+            canvas.off('mouse:down', handleFill);
+        }
+
+        function enableSelectMode() {
+            canvas.isDrawingMode = false;
+            canvas.selection = true;
+            shapeType = null;
+            canvas.forEachObject((obj) => obj.selectable = true);
+        }
+
+        function disableSelectMode() {
+            canvas.selection = false;
+            canvas.forEachObject((obj) => obj.selectable = false);
+        }
+
+        function startDrawingShape(type) {
+            shapeType = type;
+            isDrawing = true;
+            canvas.isDrawingMode = false;
+            canvas.selection = false;
+            canvas.forEachObject((obj) => obj.selectable = false);
+        }
+        function enableEraserMode() {
+            canvas.isDrawingMode = false;
+
+            canvas.defaultCursor = "url('https://www.cursor.cc/cursor/919/178/cursor.png'), auto";
+            canvas.freeDrawingCursor = "url('https://www.cursor.cc/cursor/919/178/cursor.png'), auto";
+
+            canvas.isDrawingMode = true;
+
+            canvas.freeDrawingBrush.color = '#ffffff';
+            canvas.freeDrawingBrush.width = parseInt(penWidthInput.value, 10);
+
+            canvas.selection = false;
+            canvas.forEachObject((obj) => obj.selectable = false);
+        }
+
+        drawRectButton.addEventListener('click', () => startDrawingShape('rect'));
+        drawCircleButton.addEventListener('click', () => startDrawingShape('circle'));
+        drawLineButton.addEventListener('click', () => startDrawingShape('line'));
+        drawTriangleButton.addEventListener('click', () => startDrawingShape('triangle'));
+
+
+        canvas.on('mouse:down', (options) => {
+            if (!isDrawing) return;
+
+            const pointer = canvas.getPointer(options.e);
+            const startX = pointer.x;
+            const startY = pointer.y;
+            let shape;
+
+            if (shapeType === 'rect') {
+                shape = new fabric.Rect({
+                    left: startX,
+                    top: startY,
+                    width: 0,
+                    height: 0,
+                    fill: 'transparent',
+                    stroke: penColorInput.value,
+                    strokeWidth: parseInt(penWidthInput.value, 10)
+                });
+            } else if (shapeType === 'circle') {
+                shape = new fabric.Circle({
+                    left: startX,
+                    top: startY,
+                    radius: 0,
+                    fill: 'transparent',
+                    stroke: penColorInput.value,
+                    strokeWidth: parseInt(penWidthInput.value, 10)
+                });
+            } else if (shapeType === 'line') {
+                shape = new fabric.Line([startX, startY, startX, startY], {
+                    stroke: penColorInput.value,
+                    strokeWidth: parseInt(penWidthInput.value, 10)
+                });
+            } else if (shapeType === 'triangle') {
+                shape = new fabric.Triangle({
+                    left: startX,
+                    top: startY,
+                    width: 0,
+                    height: 0,
+                    fill: 'transparent',
+                    stroke: penColorInput.value,
+                    strokeWidth: parseInt(penWidthInput.value, 10)
+                });
+            }
+
+            if (shape) {
+                canvas.add(shape);
+                canvas.renderAll();
+
+                canvas.on('mouse:move', (opt) => {
+                    const pointer = canvas.getPointer(opt.e);
+                    if (shapeType === 'rect') {
+                        shape.set({ width: Math.abs(startX - pointer.x), height: Math.abs(startY - pointer.y) });
+                        shape.set({ left: pointer.x < startX ? pointer.x : startX });
+                        shape.set({ top: pointer.y < startY ? pointer.y : startY });
+                    } else if (shapeType === 'circle') {
+                        const radius = Math.sqrt(Math.pow(startX - pointer.x, 2) + Math.pow(startY - pointer.y, 2)) / 2;
+                        shape.set({ radius });
+                        shape.set({ left: pointer.x < startX ? pointer.x : startX });
+                        shape.set({ top: pointer.y < startY ? pointer.y : startY });
+                    } else if (shapeType === 'line') {
+                        shape.set({ x2: pointer.x, y2: pointer.y });
+                    } else if (shapeType === 'triangle') {
+                        shape.set({ width: Math.abs(startX - pointer.x), height: Math.abs(startY - pointer.y) });
+                        shape.set({ left: pointer.x < startX ? pointer.x : startX });
+                        shape.set({ top: pointer.y < startY ? pointer.y : startY });
                     }
-                }
-                break;
+                    canvas.renderAll();
+                });
+
+                canvas.on('mouse:up', () => {
+                    canvas.off('mouse:move');
+                    canvas.off('mouse:up');
+                    isDrawing = false;
+                    shapeType = null;
+                    debouncedSendDrawingData();
+                });
             }
-        }
-    });
+        });
+
+        // Event listeners for mode buttons
+        fillModeButton.addEventListener('click', () => {
+            disableSelectMode();
+            disableFillMode();
+            enableFillMode();
+        });
+
+        pencilModeButton.addEventListener('click', () => {
+            disableSelectMode();
+            disableFillMode();
+            enableDrawingMode();
+        });
+
+        selectModeButton.addEventListener('click', () => {
+            disableFillMode();
+            enableSelectMode();
+        });
 
 
-    var floodfill = (function () {
+        eraserModeButton.addEventListener('click', () => {
+            disableSelectMode();
+            disableFillMode();
+            enableEraserMode();
+        });
 
-        //Copyright(c) Max Irwin - 2011, 2015, 2016
-        //MIT License
-
-        function floodfill(data, x, y, fillcolor, tolerance, width, height) {
-
-            var length = data.length;
-            var Q = [];
-            var i = (x + y * width) * 4;
-            var e = i, w = i, me, mw, w2 = width * 4;
-
-            var targetcolor = [data[i], data[i + 1], data[i + 2], data[i + 3]];
-
-            if (!pixelCompare(i, targetcolor, fillcolor, data, length, tolerance)) {
-                return false;
+        // Event listeners for control changes
+        penColorInput.addEventListener('change', () => {
+            if (canvas.isDrawingMode) {
+                canvas.freeDrawingBrush.color = penColorInput.value;
             }
-            Q.push(i);
-            while (Q.length) {
-                i = Q.pop();
-                if (pixelCompareAndSet(i, targetcolor, fillcolor, data, length, tolerance)) {
-                    e = i;
-                    w = i;
-                    mw = parseInt(i / w2) * w2; //left bound
-                    me = mw + w2;             //right bound
-                    while (mw < w && mw < (w -= 4) && pixelCompareAndSet(w, targetcolor, fillcolor, data, length, tolerance)) ; //go left until edge hit
-                    while (me > e && me > (e += 4) && pixelCompareAndSet(e, targetcolor, fillcolor, data, length, tolerance)) ; //go right until edge hit
-                    for (var j = w + 4; j < e; j += 4) {
-                        if (j - w2 >= 0 && pixelCompare(j - w2, targetcolor, fillcolor, data, length, tolerance)) Q.push(j - w2); //queue y-1
-                        if (j + w2 < length && pixelCompare(j + w2, targetcolor, fillcolor, data, length, tolerance)) Q.push(j + w2); //queue y+1
+        });
+
+        penWidthInput.addEventListener('change', () => {
+            if (canvas.isDrawingMode) {
+                canvas.freeDrawingBrush.width = parseInt(penWidthInput.value, 10);
+            }
+        });
+
+        let _isDrawingUser = false;
+
+        // Simulate receiving drawing data from the server
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+
+            switch (data.type) {
+                case "init": {
+                    _localizeConatainer = data.localizeContainer;
+                    _isDrawingUser = data.isDrawer;
+                    _isMobile = Boolean(data.isMobile);
+
+                    if (_isMobile) {
+                        document.body.classList.add("mobile");
+                        const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                        const chatHeight = 54;
+                        window.parent.postMessage({
+                            type: "WidgetRearrange",
+                            width: "100%",
+                            height: `calc(100% - ${rtcAndNotchHeight + chatHeight}px)`,
+                            top: -chatHeight + 'px',
+                            anchor: 'sidebar'
+                        }, "*")
+                        setTimeout(() => {
+                            const widget = document.getElementById("widget");
+                            const style = window.getComputedStyle(widget);
+                            const paddingLeft = parseFloat(style.paddingLeft);
+                            const paddingRight = parseFloat(style.paddingRight);
+                            const paddingTop = parseFloat(style.paddingTop);
+                            const paddingBottom = parseFloat(style.paddingBottom);
+                            const gap = parseFloat(style.gap);
+
+                            const contentWidth = widget.clientWidth - paddingLeft - paddingRight;
+                            const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
+
+                            document.getElementById("main-canvas").setAttribute("height", contentHeight + 'px');
+                            document.getElementById("main-canvas").setAttribute("width", contentWidth + 'px');
+
+                            document.getElementById("preview-canvas").setAttribute("height", contentHeight + 'px');
+                            document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
+                        }, 500)
                     }
+
+                    if (isDrawingUser) {
+                        document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
+                        document.getElementById("quiz").classList.remove("hidden");
+                        enableDrawingMode();
+
+                    } else {
+                        document.getElementById("tools").classList.add("hidden");
+                        disableDrawingMode();
+                    }
+                    break;
+                }
+                case "drawingData": {
+                    const drawingData = event.data.data;
+                    canvas.loadFromJSON(drawingData, canvas.renderAll.bind(canvas));
+                    break;
                 }
             }
-            return data;
-        };
+        });
 
-        function pixelCompare(i, targetcolor, fillcolor, data, length, tolerance) {
-            if (i < 0 || i >= length) return false; //out of bounds
-            if (data[i + 3] === 0 && fillcolor.a > 0) return true;  //surface is invisible and fill is visible
-
-            if (
-                Math.abs(targetcolor[3] - fillcolor.a) <= tolerance &&
-                Math.abs(targetcolor[0] - fillcolor.r) <= tolerance &&
-                Math.abs(targetcolor[1] - fillcolor.g) <= tolerance &&
-                Math.abs(targetcolor[2] - fillcolor.b) <= tolerance
-            ) return false; //target is same as fill
-
-            if (
-                (targetcolor[3] === data[i + 3]) &&
-                (targetcolor[0] === data[i]) &&
-                (targetcolor[1] === data[i + 1]) &&
-                (targetcolor[2] === data[i + 2])
-            ) return true; //target matches surface
-
-            if (
-                Math.abs(targetcolor[3] - data[i + 3]) <= (255 - tolerance) &&
-                Math.abs(targetcolor[0] - data[i]) <= tolerance &&
-                Math.abs(targetcolor[1] - data[i + 1]) <= tolerance &&
-                Math.abs(targetcolor[2] - data[i + 2]) <= tolerance
-            ) return true; //target to surface within tolerance
-
-            return false; //no match
-        };
-
-        function pixelCompareAndSet(i, targetcolor, fillcolor, data, length, tolerance) {
-            if (pixelCompare(i, targetcolor, fillcolor, data, length, tolerance)) {
-                //fill the color
-                data[i] = fillcolor.r;
-                data[i + 1] = fillcolor.g;
-                data[i + 2] = fillcolor.b;
-                data[i + 3] = fillcolor.a;
-                return true;
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Delete') {
+                const activeObjects = canvas.getActiveObjects();
+                if (activeObjects.length) {
+                    activeObjects.forEach((obj) => canvas.remove(obj));
+                    canvas.discardActiveObject();
+                    canvas.renderAll();
+                    debouncedSendDrawingData();
+                }
             }
-            return false;
+        });
+
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
         }
 
-        function fillUint8ClampedArray(data, x, y, color, tolerance, width, height) {
-            if (!data instanceof Uint8ClampedArray) throw new Error("data must be an instance of Uint8ClampedArray");
-            if (isNaN(width) || width < 1) throw new Error("argument 'width' must be a positive integer");
-            if (isNaN(height) || height < 1) throw new Error("argument 'height' must be a positive integer");
-            if (isNaN(x) || x < 0) throw new Error("argument 'x' must be a positive integer");
-            if (isNaN(y) || y < 0) throw new Error("argument 'y' must be a positive integer");
-            if (width * height * 4 !== data.length) throw new Error("width and height do not fit Uint8ClampedArray dimensions");
 
-            var xi = Math.floor(x);
-            var yi = Math.floor(y);
+        const tools = document.querySelectorAll('.tool');
 
-            if (xi !== x) console.warn("x truncated from", x, "to", xi);
-            if (yi !== y) console.warn("y truncated from", y, "to", yi);
+        tools.forEach(tool => {
+            tool.addEventListener('click', function () {
+                tools.forEach(t => t.classList.remove('selected'));
 
-            //Maximum tolerance of 254, Default to 0
-            tolerance = (!isNaN(tolerance)) ? Math.min(Math.abs(Math.round(tolerance)), 254) : 0;
+                this.classList.add('selected');
+            });
+        });
 
-            return floodfill(data, xi, yi, color, tolerance, width, height);
-        }
+        const colors = document.querySelectorAll('.color');
 
-        var getComputedColor = function (c) {
-            var temp = document.createElement("div");
-            var color = {r: 0, g: 0, b: 0, a: 0};
-            temp.style.color = c;
-            temp.style.display = "none";
-            document.body.appendChild(temp);
-            //Use native window.getComputedStyle to parse any CSS color pattern
-            var style = window.getComputedStyle(temp, null).color;
-            document.body.removeChild(temp);
-
-            var recol = /([\.\d]+)/g;
-            var vals = style.match(recol);
-            if (vals && vals.length > 2) {
-                //Coerce the string value into an rgba object
-                color.r = parseInt(vals[0]) || 0;
-                color.g = parseInt(vals[1]) || 0;
-                color.b = parseInt(vals[2]) || 0;
-                color.a = Math.round((parseFloat(vals[3]) || 1.0) * 255);
-            }
-            return color;
-        };
-
-        function fillContext(x, y, tolerance, left, top, right, bottom) {
-            var ctx = this;
-
-            //Gets the rgba color from the context fillStyle
-            var color = getComputedColor(this.fillStyle);
-
-            //Defaults and type checks for image boundaries
-            left = (isNaN(left)) ? 0 : left;
-            top = (isNaN(top)) ? 0 : top;
-            right = (!isNaN(right) && right) ? Math.min(Math.abs(right), ctx.canvas.width) : ctx.canvas.width;
-            bottom = (!isNaN(bottom) && bottom) ? Math.min(Math.abs(bottom), ctx.canvas.height) : ctx.canvas.height;
-
-            var image = ctx.getImageData(left, top, right, bottom);
-
-            var data = image.data;
-            var width = image.width;
-            var height = image.height;
-
-            if (width > 0 && height > 0) {
-                fillUint8ClampedArray(data, x, y, color, tolerance, width, height);
-                ctx.putImageData(image, left, top);
-            }
-        };
-
-        if (typeof CanvasRenderingContext2D != 'undefined') {
-            CanvasRenderingContext2D.prototype.fillFlood = fillContext;
-        }
-        ;
-
-
-        return fillUint8ClampedArray;
-
-    })();
-
-
-</script>
+        colors.forEach(color => {
+            color.addEventListener('click', function () {
+                colors.forEach(t => t.classList.remove('selected'));
+                penColorInput.value = this.dataset.color;
+                this.classList.add('selected');
+            });
+        });
+    </script>
 </body>
 
 </html>

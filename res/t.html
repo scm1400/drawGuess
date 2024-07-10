@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>drawGuess 게임</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/typography.css">
+    <link rel="stylesheet" type="text/css" href="https://d3qhd4hfu1j9v4.cloudfront.net/static/zep-script/css/color.css">
+    <style>
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 400;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Regular.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 500;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Medium.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 600;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-SemiBold.woff") format("woff");
+        }
+
+        @font-face {
+            font-family: "Pretendard JP";
+            font-style: normal;
+            font-display: swap;
+            font-weight: 700;
+            src: url("https://d3qhd4hfu1j9v4.cloudfront.net/temp/fonts/woff/PretendardJP-Bold.woff") format("woff");
+        }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: "Pretendard JP";
+            color: #27262E;
+        }
+
+        body {
+
+        }
+
+        #widget {
+            border-radius: 6px;
+            padding: 48px 8px;
+            display: flex;
+            background: white;
+            gap: 16px;
+        }
+
+        #widget.mobile {
+            padding: 12px 8px 12px;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            height: 100vh;
+        }
+
+        #tools {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 6px;
+            background: #192146;
+            border-radius: 6px;
+            box-shadow: inset 0 0 5px 1px black;
+        }
+
+        .mobile #tools {
+            flex-direction: row;
+            gap: 4px;
+            padding: 4px;
+            box-shadow: inset 0 0 5px 1px black;
+            height: max-content;
+        }
+
+        .mobile .tool > svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .mobile .draw-tools > .tool {
+            padding: 3px;
+        }
+
+        .draw-tools {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .mobile .draw-tools {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .draw-tools > .tool {
+            display: flex;
+            padding: 6px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .tool.active {
+            background: #002bffa1;
+        }
+
+        #canvas-wrapper {
+            position: relative;
+            height: max-content;
+            /* width: max-content; */
+            flex-grow: 1;
+        }
+
+        #main-canvas,
+        #preview-canvas {
+            cursor: crosshair;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 12px;
+            box-shadow: inset 0 0 5px 1px black;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .eraser-cousor {
+            pointer-events: none;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(3px);
+            background: rgba(255, 255, 255, 0.5);
+            position: fixed;
+            border-radius: 50%;
+            aspect-ratio: 1;
+            z-index: 9;
+            width: 20px;
+            cursor: none;
+        }
+
+        .palette {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            /* grid-template-columns: repeat(6, 1fr); */
+            /* flex-grow: 1; */
+            /* height: 100%; */
+            width: 100%;
+        }
+
+        .mobile .palette {
+            gap: 4px;
+            grid-template-columns: repeat(4, 1fr);
+            flex-grow: 1;
+            grid-auto-rows: max-content;
+        }
+
+        .mobile .palette-color {
+            height: 24px;
+            width: 24px;
+        }
+
+        .palette-color {
+            cursor: pointer;
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 4px;
+            box-shadow: inset 0 0 1px 1px black;
+        }
+
+        .palette-color.active {
+            border: 2px solid white;
+        }
+
+        .quiz-wrapper {
+            display: flex;
+            /* width: 600px; */
+            height: 400px;
+            position: relative;
+            background: white;
+            flex-grow: 1;
+        }
+
+        #category {
+            display: flex;
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            top: -20px;
+            font-size: 20px;
+            font-weight: 500;
+            border-radius: 4px;
+            padding: 0 12px;
+            height: 34px;
+            width: max-content;
+            align-items: center;
+            justify-content: center;
+
+            color: white;
+            background: rgb(255, 27, 0);
+            background: linear-gradient(0deg, rgba(255, 27, 0, 1) 0%, rgba(251, 75, 2, 1) 100%);
+            box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5), 7px 7px 20px 0px rgba(0, 0, 0, .1), 4px 4px 5px 0px rgba(0, 0, 0, .1);
+        }
+
+        .mobile #category {
+            bottom: 0;
+            font-weight: 600;
+            padding: 0 10px;
+            height: 30px;
+            z-index: 1;
+            font-size: 16px;
+            top: unset;
+            transform: translate(-50%, -100%);
+        }
+
+        #quiz {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            z-index: 2;
+            border-radius: 6px;
+            padding: 0 10px;
+            height: 32px;
+            background-color: #4dccc6;
+            background-image: linear-gradient(315deg, #4dccc6 0%, #96e4df 74%);
+            box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5), 7px 7px 20px 0px rgba(0, 0, 0, .1), 4px 4px 5px 0px rgba(0, 0, 0, .1);
+        }
+
+        .size-selector {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile .size-selector {
+            flex-direction: column;
+        }
+
+        .size-selector > div {
+            cursor: pointer;
+            border-radius: 999px;
+            background-color: white;
+        }
+
+        .size-selector > div.active {
+            background-color: deeppink;
+        }
+
+        .size-s {
+            width: 9px;
+            height: 9px;
+        }
+
+        .size-sm {
+            width: 12px;
+            height: 12px;
+        }
+
+        .size-m {
+            width: 18px;
+            height: 18px;
+        }
+
+        .size-l {
+            width: 24px;
+            height: 24px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<div class="eraser-cousor hidden">
+</div>
+<div id="widget" class="hidden">
+    <div id="tools">
+        <div class="draw-tools">
+            <div class="tool active" data-tool="pencil">
+                <svg width="32px" height="32px" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"
+                     xml:space="preserve" fill="none"><g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g
+                            id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g
+                            id="SVGRepo_iconCarrier"><path d="m104.175 90.97-4.252 38.384 38.383-4.252L247.923 15.427V2.497L226.78-18.646h-12.93zm98.164-96.96 31.671 31.67" class="cls-1" style="fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" transform="translate(-77.923 40.646)"></path>
+                        <path d="m195.656 33.271-52.882 52.882"
+                              style="fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:5;stroke-dasharray:none;stroke-opacity:1"
+                              transform="translate(-77.923 40.646)">
+                        </path>
+                    </g>
+                </svg>
+            </div>
+            <div class="tool" data-tool="eraser">
+                <svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path d="M20.25 9.84C20.25 9.38 20.07 8.94 19.74 8.61L15.39 4.26C14.71 3.58 13.61 3.58 12.93 4.26L4.26 12.93C3.93 13.26 3.75 13.7 3.75 14.16C3.75 14.62 3.93 15.06 4.26 15.39L8.61 19.74C8.95 20.08 9.39 20.25 9.84 20.25C9.88 20.25 9.93 20.25 9.97 20.24C9.99 20.24 10 20.24 10.02 20.24H18.01C18.42 20.24 18.76 19.9 18.76 19.49C18.76 19.08 18.42 18.74 18.01 18.74H12.06L19.73 11.07C20.06 10.74 20.24 10.3 20.24 9.84H20.25ZM5.32 14.33C5.26 14.27 5.25 14.2 5.25 14.16C5.25 14.12 5.25 14.05 5.32 13.99L9.12 10.19L13.81 14.88L10.01 18.68C9.92 18.77 9.77 18.77 9.67 18.68L5.32 14.32V14.33ZM18.68 10.02L14.88 13.82L10.19 9.13L13.99 5.33C14.08 5.24 14.23 5.24 14.33 5.33L18.68 9.69C18.74 9.75 18.75 9.82 18.75 9.86C18.75 9.9 18.75 9.97 18.68 10.03V10.02Z"
+                              fill="#ffffff"></path>
+                    </g>
+                </svg>
+            </div>
+            <div class="tool" data-tool="rectOutline">
+                <svg fill="#ffffff" width="32px" height="32px" viewBox="0 0 64 64" version="1.1"
+                     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve"
+                     xmlns:serif="http://www.serif.com/"
+                     style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"><g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier"> <rect id="Icons" x="-1152" y="-64" width="1280" height="800"
+                                                       style="fill:none;"></rect>
+                        <g id="Icons1" serif:id="Icons"> <g id="Strike"> </g>
+                            <g id="H1"> </g>
+                            <g id="H2"> </g>
+                            <g id="H3"> </g>
+                            <g id="list-ul"> </g>
+                            <g id="hamburger-1"> </g>
+                            <g id="hamburger-2"> </g>
+                            <g id="list-ol"> </g>
+                            <g id="list-task"> </g>
+                            <g id="trash"> </g>
+                            <g id="vertical-menu"> </g>
+                            <g id="horizontal-menu"> </g>
+                            <g id="sidebar-2"> </g>
+                            <g id="Pen"> </g>
+                            <g id="Pen1" serif:id="Pen"> </g>
+                            <g id="clock"> </g>
+                            <g id="external-link"> </g>
+                            <g id="hr"> </g>
+                            <g id="info"> </g>
+                            <g id="warning"> </g>
+                            <g id="plus-circle"> </g>
+                            <g id="minus-circle"> </g>
+                            <g id="vue"> </g>
+                            <g id="cog"> </g>
+                            <g id="logo"> </g>
+                            <g id="radio-check"> </g>
+                            <g id="eye-slash"> </g>
+                            <g id="eye"> </g>
+                            <g id="toggle-off"> </g>
+                            <path id="square"
+                                  d="M50.005,56l-35.989,0c-3.309,0 -5.995,-2.686 -5.995,-5.995l0,-36.011c0,-3.308 2.686,-5.995 5.995,-5.995l35.989,0c3.309,0 5.995,2.687 5.995,5.995l0,36.011c0,3.309 -2.686,5.995 -5.995,5.995Zm-0.993,-4.001c1.65,0 2.989,-1.339 2.989,-2.989l0,-34.021c0,-1.649 -1.339,-2.989 -2.989,-2.989l-34.003,0c-1.65,0 -2.989,1.34 -2.989,2.989l0,34.021c0,1.65 1.339,2.989 2.989,2.989l34.003,0Z"></path>
+                            <g id="shredder"> </g>
+                            <g id="spinner--loading--dots-" serif:id="spinner [loading, dots]"> </g>
+                            <g id="react"> </g>
+                            <g id="check-selected"> </g>
+                            <g id="turn-off"> </g>
+                            <g id="code-block"> </g>
+                            <g id="user"> </g>
+                            <g id="coffee-bean"> </g>
+                            <g id="coffee-beans"> <g id="coffee-bean1" serif:id="coffee-bean"> </g> </g>
+                            <g id="coffee-bean-filled"> </g>
+                            <g id="coffee-beans-filled"> <g id="coffee-bean2" serif:id="coffee-bean"> </g> </g>
+                            <g id="clipboard"> </g>
+                            <g id="clipboard-paste"> </g>
+                            <g id="clipboard-copy"> </g>
+                            <g id="Layer1"> </g> </g> </g></svg>
+            </div>
+            <div class="tool" data-tool="rect">
+                <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#ffffff">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path d="M4.281 3h16.437A1.281 1.281 0 0 1 22 4.281v16.437A1.282 1.282 0 0 1 20.718 22H4.282A1.282 1.282 0 0 1 3 20.718V4.281A1.281 1.281 0 0 1 4.281 3z"></path>
+                        <path fill="none" d="M0 0h24v24H0z"></path>
+                    </g>
+                </svg>
+            </div>
+            <div class="tool" data-tool="circleOutline">
+                <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier"><title></title>
+                        <g id="Complete">
+                            <g id="Circle">
+                                <circle cx="12" cy="12" data-name="Circle" fill="none" id="Circle-2" r="10"
+                                        stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="2"></circle>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="tool" data-tool="circle">
+                <svg fill="#ffffff" width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <circle cx="16" cy="16" r="16"></circle>
+                    </g>
+                </svg>
+            </div>
+            <div class="tool" data-tool="fill">
+                <svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                              d="M18.2635 11.646L11.1924 4.57492L9.44588 6.32143L16.5169 13.3925L18.2635 11.646ZM3.41421 12.3531L8.03167 7.73565L15.1027 14.8067L10.4853 19.4242L3.41421 12.3531ZM17.2241 15.5138L19.3941 13.3438L19.4404 13.4385L20.0558 14.6984C19.831 15.6632 19.5913 16.3048 19.3973 16.8243C19.1664 17.4427 19 17.8882 19 18.5C19 19.6734 19.5 20.5 20.5 20.5C21.5 20.5 22 20 22 18.5C22 17.8882 21.8336 17.4427 21.6027 16.8243C21.4522 16.4215 21.2744 15.9453 21.0973 15.3019L21.3332 13.1064C21.4987 11.5654 21.4334 9.99227 20.4314 8.84284C19.9406 8.27981 19.5579 8.06042 19.0274 7.75634L19.0273 7.7563C18.8504 7.65487 18.657 7.54401 18.4376 7.40784C17.4574 6.79921 15.6368 5.54617 11.8306 2.39085C11.4332 2.06139 10.8503 2.08858 10.4853 2.4536L7.32456 5.61433L1.29289 11.646C0.902369 12.0365 0.902369 12.6697 1.29289 13.0602L9.77817 21.5455C10.1687 21.936 10.8019 21.936 11.1924 21.5455L17.2241 15.5138Z"
+                              fill="#ffffff"></path>
+                    </g>
+                </svg>
+            </div>
+        </div>
+        <div class="palette">
+            <div class="palette-color active" style="background: black">
+            </div>
+            <div class="palette-color" style="background: grey">
+            </div>
+            <div class="palette-color" style="background: #0000FF">
+            </div>
+            <div class="palette-color" style="background: #00FFFF">
+            </div>
+            <div class="palette-color" style="background: #008000">
+            </div>
+            <div class="palette-color" style="background: #808000">
+            </div>
+            <div class="palette-color" style="background: #FFA500">
+            </div>
+            <div class="palette-color" style="background: saddlebrown">
+            </div>
+            <div class="palette-color" style="background: red">
+            </div>
+            <div class="palette-color" style="background: #FF00FF">
+            </div>
+            <div class="palette-color" style="background: yellow">
+            </div>
+            <div class="palette-color" style="background: #800080">
+            </div>
+        </div>
+        <div class="size-selector">
+            <div class="size-s active" onclick="selectSize(this)"></div>
+            <div class="size-sm" onclick="selectSize(this)"></div>
+            <div class="size-m" onclick="selectSize(this)"></div>
+            <div class="size-l" onclick="selectSize(this)"></div>
+        </div>
+    </div>
+    <div class="quiz-wrapper">
+        <div id="category">주제: 동물 | oo님 차례</div>
+        <div id="canvas-wrapper">
+            <div id="quiz" class="hidden">주제어: 토끼</div>
+            <canvas id="main-canvas" width="600px" height="400px"></canvas>
+            <canvas id="preview-canvas" width="600px" height="400px"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const mainCanvas = document.getElementById('main-canvas');
+    const mainContext = mainCanvas.getContext('2d');
+    mainContext.fillStyle = '#ffffff'; // 흰색
+    mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewContext = previewCanvas.getContext('2d');
+
+    let batchedDrawingData = [];
+    let isDrawing = false;
+    let startX = 0;
+    let startY = 0;
+    let _localizeConatainer;
+
+    const eraserCursor = document.querySelector('.eraser-cousor');
+
+    const animateCursor = (e) => {
+        if (_currentDrawType == DrawType.eraser) {
+            if (eraserCursor.classList.contains("hidden")) {
+                eraserCursor.classList.remove("hidden");
+            }
+            eraserCursor.style.left = `${e.pageX}px`;
+            eraserCursor.style.top = `${e.pageY}px`;
+        }
+    }
+    window.addEventListener('mousemove', animateCursor);
+
+    document.querySelectorAll(".draw-tools > .tool").forEach((el) => {
+        el.onclick = (e) => {
+            document.querySelectorAll(".draw-tools > .tool").forEach((els) => {
+                els.classList.remove("active");
+            })
+            eraserCursor.classList.add("hidden");
+            const tool = el.dataset.tool;
+            if (Object.hasOwn(DrawType, tool)) {
+                el.classList.add("active");
+                _currentDrawType = DrawType[tool]
+            }
+
+        }
+    })
+
+    document.querySelectorAll(".palette > .palette-color").forEach((el) => {
+        el.onclick = (e) => {
+            document.querySelectorAll(".palette > .palette-color").forEach((els) => {
+                els.classList.remove("active");
+            })
+            el.classList.add("active");
+            const color = el.style.backgroundColor;
+            _currentColor = color;
+        }
+    })
+
+    const DrawType = {
+        pencil: 'pencil',
+        eraser: 'eraser',
+        line: 'line',
+        circle: 'circle',
+        circleOutline: 'circleOutline',
+        rect: 'rect',
+        rectOutline: 'rectOutline',
+        fill: 'fill'
+    };
+
+
+    let _currentDrawType = DrawType.pencil;
+    let _currentColor = 'black';
+    let _currentLineWidth = 3;
+
+    previewCanvas.addEventListener('mousedown', startDrawing);
+    previewCanvas.addEventListener('mousemove', draw);
+    previewCanvas.addEventListener('mouseup', endDrawing);
+    previewCanvas.addEventListener('mouseout', endDrawing);
+
+    // 모바일용 터치 이벤트 리스너 추가
+    previewCanvas.addEventListener('touchstart', function (event) {
+        // 여러 개의 터치 포인트가 있을 수 있으므로, 첫 번째 터치 포인트를 사용
+        const touch = event.touches[0];
+        // 마우스 이벤트에서의 좌표와 동일한 방식으로 터치의 x, y 좌표를 가져옴
+        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
+        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
+        startDrawing({offsetX, offsetY}); // 만약 startDrawing 함수가 좌표를 파라미터로 받는다면 이런 식으로 전달
+        event.preventDefault(); // 기본 스크롤 행동 등을 막기 위함
+    });
+
+    previewCanvas.addEventListener('touchmove', function (event) {
+        const touch = event.touches[0];
+        const offsetX = touch.clientX - previewCanvas.getBoundingClientRect().left;
+        const offsetY = touch.clientY - previewCanvas.getBoundingClientRect().top;
+        draw({offsetX, offsetY});
+        event.preventDefault();
+    });
+
+    previewCanvas.addEventListener('touchend', endDrawing);
+    previewCanvas.addEventListener('touchcancel', endDrawing);
+
+    function selectSize(el) {
+        document.querySelectorAll(".size-selector > div").forEach((el) => {
+            el.classList.remove("active");
+        })
+        el.classList.add("active");
+
+        let lineWidth = 3;
+        if (el.classList.contains("size-s")) {
+            lineWidth = 3;
+        } else if (el.classList.contains("size-sm")) {
+            lineWidth = 5;
+        } else if (el.classList.contains("size-m")) {
+            lineWidth = 10;
+        } else if (el.classList.contains("size-l")) {
+            lineWidth = 15;
+        }
+
+        _currentLineWidth = lineWidth;
+        // previewContext.lineWidth = lineWidth;
+        // mainContext.lineWidth = lineWidth;
+    }
+
+    function startDrawing(e) {
+        if (!_isDrawer) return;
+        isDrawing = true;
+        [startX, startY] = [e.offsetX, e.offsetY];
+
+        // if (_currentDrawType === DrawType.eraser) {
+        //     mainContext.globalCompositeOperation = 'destination-out';
+        //     mainContext
+        //     mainContext.beginPath();
+        //     mainContext.arc(startX, startY, _currentLineWidth / 2, 0, Math.PI * 2, false);
+        //     mainContext.fill();
+        //     mainContext.closePath();
+        // } else 
+        if (_currentDrawType === DrawType.fill) {
+            drawShape({
+                startX,
+                startY,
+            }, mainContext);
+        }
+    }
+
+    function draw(e) {
+        if (!isDrawing || _currentDrawType === DrawType.fill) return;
+        // console.log(1)
+        const currentX = e.offsetX;
+        const currentY = e.offsetY;
+
+        if (_currentDrawType === DrawType.eraser || _currentDrawType === DrawType.pencil) {
+            const drawingData = {
+                type: "sendDrawingData",
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY,
+                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
+                lineWidth: _currentLineWidth
+            };
+
+            drawShape(drawingData, mainContext);
+            [startX, startY] = [currentX, currentY];
+            batchedDrawingData.push(drawingData);
+            if (batchedDrawingData.length > 30) {
+                window.parent.postMessage({type: 'batchedDrawingData', data: batchedDrawingData}, '*');
+                batchedDrawingData = [];
+            }
+        } else {
+            previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            const drawingData = {
+                type: "sendDrawingData",
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY,
+                color: _currentColor,
+                lineWidth: _currentLineWidth
+            };
+            drawShape(drawingData, previewContext);
+        }
+    }
+
+
+    function endDrawing(e) {
+        if (!isDrawing) return;
+        isDrawing = false;
+
+        const currentX = e.offsetX;
+        const currentY = e.offsetY;
+
+        if (_currentDrawType === DrawType.eraser || _currentDrawType === DrawType.pencil) {
+            if (batchedDrawingData.length > 30) {
+                window.parent.postMessage({type: 'batchedDrawingData', data: batchedDrawingData}, '*');
+                batchedDrawingData = [];
+            }
+
+            const drawingData = {
+                type: "sendDrawingData",
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY,
+                color: _currentDrawType === DrawType.eraser ? "white" : _currentColor,
+                lineWidth: _currentLineWidth
+            };
+            drawShape(drawingData, mainContext);
+
+        } else {
+            const drawingData = {
+                type: "sendDrawingData",
+                drawType: _currentDrawType,
+                startX,
+                startY,
+                currentX,
+                currentY,
+                color: _currentColor,
+                lineWidth: _currentLineWidth
+            };
+
+            drawShape(drawingData, mainContext);
+            window.parent.postMessage(drawingData, '*');
+        }
+
+        previewContext.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    }
+
+
+    function drawShape(data, context) {
+        const {drawType, startX, startY, currentX, currentY, color, lineWidth} = data;
+
+        context.strokeStyle = color;
+        context.fillStyle = color;
+        context.lineWidth = DrawType.eraser ? lineWidth * 2 : lineWidth;
+
+        if (drawType !== DrawType.eraser) {
+            context.globalCompositeOperation = 'source-over';
+        }
+
+        switch (drawType) {
+            case DrawType.line: {
+                context.beginPath();
+                context.moveTo(startX, startY);
+                context.lineTo(currentX, currentY);
+                context.stroke();
+                context.closePath();
+                break;
+            }
+            case DrawType.circle: {
+                const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)) / 2;
+                context.beginPath();
+                context.arc((startX + currentX) / 2, (startY + currentY) / 2, radius, 0, 2 * Math.PI);
+                context.fill();
+                context.closePath();
+                break;
+            }
+            case DrawType.circleOutline: {
+                const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)) / 2;
+                context.beginPath();
+                context.arc((startX + currentX) / 2, (startY + currentY) / 2, radius, 0, 2 * Math.PI);
+                context.stroke();
+                context.closePath();
+                break;
+            }
+            case DrawType.rect: {
+                context.beginPath();
+                context.fillRect(startX, startY, currentX - startX, currentY - startY);
+                context.closePath();
+                break;
+            }
+            case DrawType.rectOutline: {
+                context.beginPath();
+                context.rect(startX, startY, currentX - startX, currentY - startY);
+                context.stroke();
+                context.closePath();
+                break;
+            }
+            case DrawType.fill: {
+                context.fillFlood(startX, startY, 32);
+                break;
+            }
+            case DrawType.pencil:
+            case DrawType.eraser: {
+                // context.globalCompositeOperation = drawType === DrawType.eraser ? 'destination-out' : 'source-over';
+                context.globalCompositeOperation = 'source-over';
+                context.fillStyle = DrawType.eraser ? 'white' : color;
+                context.lineJoin = 'round';
+                context.lineCap = 'round';
+                context.beginPath();
+                context.moveTo(startX, startY);
+                context.lineTo(currentX, currentY);
+                context.stroke();
+                context.closePath();
+                break;
+            }
+        }
+    }
+
+    let _isDrawer = false;
+    let _isMobile = false;
+    window.addEventListener('message', (event) => {
+        const data = event.data;
+        switch (data.type) {
+            case "init": {
+                _localizeConatainer = data.localizeContainer;
+                _isDrawer = data.isDrawer;
+                _isMobile = Boolean(data.isMobile);
+                document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
+
+                if (_isMobile) {
+                    document.getElementById("widget").classList.add("mobile");
+                    const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                    const chatHeight = 54;
+                    window.parent.postMessage({
+                        type: "WidgetRearrange",
+                        width: "100%",
+                        height: `calc(100% - ${rtcAndNotchHeight + chatHeight}px)`,
+                        top: -chatHeight + 'px',
+                        anchor: 'sidebar'
+                    }, "*")
+                    setTimeout(() => {
+                        const widget = document.getElementById("widget");
+                        const style = window.getComputedStyle(widget);
+                        const paddingLeft = parseFloat(style.paddingLeft);
+                        const paddingRight = parseFloat(style.paddingRight);
+                        const paddingTop = parseFloat(style.paddingTop);
+                        const paddingBottom = parseFloat(style.paddingBottom);
+                        const gap = parseFloat(style.gap);
+
+                        const contentWidth = widget.clientWidth - paddingLeft - paddingRight;
+                        const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
+
+                        document.getElementById("main-canvas").setAttribute("height", contentHeight + 'px');
+                        document.getElementById("main-canvas").setAttribute("width", contentWidth + 'px');
+
+                        document.getElementById("preview-canvas").setAttribute("height", contentHeight + 'px');
+                        document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
+                    }, 500)
+                }
+
+                if (_isDrawer) {
+                    document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
+                    document.getElementById("quiz").classList.remove("hidden");
+                } else {
+                    document.getElementById("tools").classList.add("hidden");
+                }
+
+                document.getElementById("widget").classList.remove("hidden");
+                break;
+            }
+            case "drawingNotify": {
+                drawShape(data, mainContext);
+                break;
+            }
+            case "batchedDrawingData": {
+                if (Array.isArray(event.data.data)) {
+                    for (const drawingData of event.data.data) {
+                        drawShape(drawingData, mainContext);
+                    }
+                }
+                break;
+            }
+        }
+    });
+
+
+    var floodfill = (function () {
+
+        //Copyright(c) Max Irwin - 2011, 2015, 2016
+        //MIT License
+
+        function floodfill(data, x, y, fillcolor, tolerance, width, height) {
+
+            var length = data.length;
+            var Q = [];
+            var i = (x + y * width) * 4;
+            var e = i, w = i, me, mw, w2 = width * 4;
+
+            var targetcolor = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+
+            if (!pixelCompare(i, targetcolor, fillcolor, data, length, tolerance)) {
+                return false;
+            }
+            Q.push(i);
+            while (Q.length) {
+                i = Q.pop();
+                if (pixelCompareAndSet(i, targetcolor, fillcolor, data, length, tolerance)) {
+                    e = i;
+                    w = i;
+                    mw = parseInt(i / w2) * w2; //left bound
+                    me = mw + w2;             //right bound
+                    while (mw < w && mw < (w -= 4) && pixelCompareAndSet(w, targetcolor, fillcolor, data, length, tolerance)) ; //go left until edge hit
+                    while (me > e && me > (e += 4) && pixelCompareAndSet(e, targetcolor, fillcolor, data, length, tolerance)) ; //go right until edge hit
+                    for (var j = w + 4; j < e; j += 4) {
+                        if (j - w2 >= 0 && pixelCompare(j - w2, targetcolor, fillcolor, data, length, tolerance)) Q.push(j - w2); //queue y-1
+                        if (j + w2 < length && pixelCompare(j + w2, targetcolor, fillcolor, data, length, tolerance)) Q.push(j + w2); //queue y+1
+                    }
+                }
+            }
+            return data;
+        };
+
+        function pixelCompare(i, targetcolor, fillcolor, data, length, tolerance) {
+            if (i < 0 || i >= length) return false; //out of bounds
+            if (data[i + 3] === 0 && fillcolor.a > 0) return true;  //surface is invisible and fill is visible
+
+            if (
+                Math.abs(targetcolor[3] - fillcolor.a) <= tolerance &&
+                Math.abs(targetcolor[0] - fillcolor.r) <= tolerance &&
+                Math.abs(targetcolor[1] - fillcolor.g) <= tolerance &&
+                Math.abs(targetcolor[2] - fillcolor.b) <= tolerance
+            ) return false; //target is same as fill
+
+            if (
+                (targetcolor[3] === data[i + 3]) &&
+                (targetcolor[0] === data[i]) &&
+                (targetcolor[1] === data[i + 1]) &&
+                (targetcolor[2] === data[i + 2])
+            ) return true; //target matches surface
+
+            if (
+                Math.abs(targetcolor[3] - data[i + 3]) <= (255 - tolerance) &&
+                Math.abs(targetcolor[0] - data[i]) <= tolerance &&
+                Math.abs(targetcolor[1] - data[i + 1]) <= tolerance &&
+                Math.abs(targetcolor[2] - data[i + 2]) <= tolerance
+            ) return true; //target to surface within tolerance
+
+            return false; //no match
+        };
+
+        function pixelCompareAndSet(i, targetcolor, fillcolor, data, length, tolerance) {
+            if (pixelCompare(i, targetcolor, fillcolor, data, length, tolerance)) {
+                //fill the color
+                data[i] = fillcolor.r;
+                data[i + 1] = fillcolor.g;
+                data[i + 2] = fillcolor.b;
+                data[i + 3] = fillcolor.a;
+                return true;
+            }
+            return false;
+        }
+
+        function fillUint8ClampedArray(data, x, y, color, tolerance, width, height) {
+            if (!data instanceof Uint8ClampedArray) throw new Error("data must be an instance of Uint8ClampedArray");
+            if (isNaN(width) || width < 1) throw new Error("argument 'width' must be a positive integer");
+            if (isNaN(height) || height < 1) throw new Error("argument 'height' must be a positive integer");
+            if (isNaN(x) || x < 0) throw new Error("argument 'x' must be a positive integer");
+            if (isNaN(y) || y < 0) throw new Error("argument 'y' must be a positive integer");
+            if (width * height * 4 !== data.length) throw new Error("width and height do not fit Uint8ClampedArray dimensions");
+
+            var xi = Math.floor(x);
+            var yi = Math.floor(y);
+
+            if (xi !== x) console.warn("x truncated from", x, "to", xi);
+            if (yi !== y) console.warn("y truncated from", y, "to", yi);
+
+            //Maximum tolerance of 254, Default to 0
+            tolerance = (!isNaN(tolerance)) ? Math.min(Math.abs(Math.round(tolerance)), 254) : 0;
+
+            return floodfill(data, xi, yi, color, tolerance, width, height);
+        }
+
+        var getComputedColor = function (c) {
+            var temp = document.createElement("div");
+            var color = {r: 0, g: 0, b: 0, a: 0};
+            temp.style.color = c;
+            temp.style.display = "none";
+            document.body.appendChild(temp);
+            //Use native window.getComputedStyle to parse any CSS color pattern
+            var style = window.getComputedStyle(temp, null).color;
+            document.body.removeChild(temp);
+
+            var recol = /([\.\d]+)/g;
+            var vals = style.match(recol);
+            if (vals && vals.length > 2) {
+                //Coerce the string value into an rgba object
+                color.r = parseInt(vals[0]) || 0;
+                color.g = parseInt(vals[1]) || 0;
+                color.b = parseInt(vals[2]) || 0;
+                color.a = Math.round((parseFloat(vals[3]) || 1.0) * 255);
+            }
+            return color;
+        };
+
+        function fillContext(x, y, tolerance, left, top, right, bottom) {
+            var ctx = this;
+
+            //Gets the rgba color from the context fillStyle
+            var color = getComputedColor(this.fillStyle);
+
+            //Defaults and type checks for image boundaries
+            left = (isNaN(left)) ? 0 : left;
+            top = (isNaN(top)) ? 0 : top;
+            right = (!isNaN(right) && right) ? Math.min(Math.abs(right), ctx.canvas.width) : ctx.canvas.width;
+            bottom = (!isNaN(bottom) && bottom) ? Math.min(Math.abs(bottom), ctx.canvas.height) : ctx.canvas.height;
+
+            var image = ctx.getImageData(left, top, right, bottom);
+
+            var data = image.data;
+            var width = image.width;
+            var height = image.height;
+
+            if (width > 0 && height > 0) {
+                fillUint8ClampedArray(data, x, y, color, tolerance, width, height);
+                ctx.putImageData(image, left, top);
+            }
+        };
+
+        if (typeof CanvasRenderingContext2D != 'undefined') {
+            CanvasRenderingContext2D.prototype.fillFlood = fillContext;
+        }
+        ;
+
+
+        return fillUint8ClampedArray;
+
+    })();
+
+
+</script>
+</body>
+
+</html>
