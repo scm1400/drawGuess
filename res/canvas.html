@@ -359,9 +359,21 @@
 
         const debouncedSendDrawingData = debounce(sendDrawingData, 500);
 
+        const CHUNK_SIZE = 1024; 
+
         function sendDrawingData() {
             const drawingData = JSON.stringify(canvas);
-            window.parent.postMessage({ type: 'sendDrawingData', data: drawingData }, '*');
+            const totalChunks = Math.ceil(drawingData.length / CHUNK_SIZE);
+
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = drawingData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+                window.parent.postMessage({
+                    type: 'sendDrawingData',
+                    chunk: chunk,
+                    index: i,
+                    totalChunks: totalChunks
+                }, '*');
+            }
         }
 
         function enableDrawingMode() {
@@ -626,8 +638,24 @@
                     break;
                 }
                 case "drawingNotify": {
-                    const drawingData = event.data.data;
-                    canvas.loadFromJSON(drawingData, canvas.renderAll.bind(canvas));
+                    const { chunk, index, totalChunks: total } = event.data;
+        
+                    if (index === 0) {
+                        receivedChunks = new Array(total).fill(null);
+                        totalChunks = total;
+                    }
+                    
+                    receivedChunks[index] = chunk;
+            
+                    if (receivedChunks.every(chunk => chunk !== null)) {
+                        // Reassemble the chunks into the complete data
+                        const completeData = receivedChunks.join('');
+                        const drawingData = JSON.parse(completeData);
+                        canvas.loadFromJSON(drawingData, canvas.renderAll.bind(canvas));
+
+                        receivedChunks = [];
+                        totalChunks = 0;
+                    }
                     break;
                 }
             }
