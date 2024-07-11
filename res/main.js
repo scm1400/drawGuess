@@ -717,7 +717,7 @@ function initGame(player) {
     }
   }
   _drawerId = player.id;
-  this.gamePlayInfo.selectTimer = 10;
+  player.tag.initCount = 10;
   player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
   player.tag.selectWidget.sendMessage({
     type: "init",
