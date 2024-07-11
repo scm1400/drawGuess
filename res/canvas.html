@@ -65,6 +65,7 @@
             padding: 48px 8px;
             display: flex;
             background: white;
+            justify-content: center;
             gap: 16px;
         }
 
@@ -594,6 +595,7 @@
                     _localizeConatainer = data.localizeContainer;
                     _isDrawingUser = data.isDrawer;
                     _isMobile = Boolean(data.isMobile);
+                    document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
 
                     if (_isMobile) {
                         document.body.classList.add("mobile");
