@@ -127,6 +127,10 @@
             background: white;
         }
 
+        .mobile .quiz-wrapper {
+            width: 100%;
+        }
+
         #category {
             display: flex;
             position: absolute;
@@ -360,7 +364,7 @@
 
         const debouncedSendDrawingData = debounce(sendDrawingData, 500);
 
-        const CHUNK_SIZE = 1024; 
+        const CHUNK_SIZE = 1024;
 
         function sendDrawingData() {
             const drawingData = JSON.stringify(canvas);
@@ -585,6 +589,8 @@
         });
 
         let _isDrawingUser = false;
+        let _isMobile = false;
+        let _isTablet = false;
 
         // Simulate receiving drawing data from the server
         window.addEventListener('message', (event) => {
@@ -593,11 +599,12 @@
             switch (data.type) {
                 case "init": {
                     _localizeConatainer = data.localizeContainer;
-                    _isDrawingUser = data.isDrawer;
+                    _isDrawingUser = Boolean(data.isDrawer);
                     _isMobile = Boolean(data.isMobile);
+                    _isTablet = Boolean(data.isTablet);
                     document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
 
-                    if (_isMobile) {
+                    if (_isMobile && !_isTablet) {
                         document.body.classList.add("mobile");
                         const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                         const chatHeight = 54;
@@ -619,15 +626,9 @@
 
                             const contentWidth = widget.clientWidth - paddingLeft - paddingRight;
                             const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
-
-                            document.getElementById("main-canvas").setAttribute("height", contentHeight + 'px');
-                            document.getElementById("main-canvas").setAttribute("width", contentWidth + 'px');
-
-                            document.getElementById("preview-canvas").setAttribute("height", contentHeight + 'px');
-                            document.getElementById("preview-canvas").setAttribute("width", contentWidth + 'px');
                         }, 500)
                     }
-
+         
                     if (_isDrawingUser) {
                         document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
                         document.getElementById("quiz").classList.remove("hidden");
@@ -641,14 +642,14 @@
                 }
                 case "drawingNotify": {
                     const { chunk, index, totalChunks: total } = event.data;
-        
+
                     if (index === 0) {
                         receivedChunks = new Array(total).fill(null);
                         totalChunks = total;
                     }
-                    
+
                     receivedChunks[index] = chunk;
-            
+
                     if (receivedChunks.every(chunk => chunk !== null)) {
                         // Reassemble the chunks into the complete data
                         const completeData = receivedChunks.join('');

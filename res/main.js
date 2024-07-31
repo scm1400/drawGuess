@@ -393,6 +393,8 @@ class GameRoom {
         quiz: player.id === this.gamePlayInfo.drawerId ? this.gamePlayInfo.currentQuiz : "",
         drawerName: drawerName,
         isMobile: player.isMobile,
+        //@ts-ignore
+        isTablet: player.isTablet,
         isDrawer: player.id === this.gamePlayInfo.drawerId,
         //@ts-ignore
         localizeContainer: LocalizeContainer[player.language]
@@ -633,7 +635,7 @@ App.onLeavePlayer.Add(function (player) {
     }
   }
   if (App.playerCount === 0) {
-    sendPlayerCountDataToServer();
+    sendPlayerCountDataToServer2();
   }
 });
 function showGameLobbyWidget(player) {
@@ -647,6 +649,7 @@ function showGameLobbyWidget(player) {
     type: "init",
     id: player.id,
     isMobile: player.isMobile,
+    isTablet: player.isTablet,
     roomList: _gameRoomManager.roomList
   });
 
@@ -820,6 +823,8 @@ function startGame() {
       quiz: player.id === _drawerId ? _currentQuiz : "",
       drawerName: drawerName,
       isMobile: player.isMobile,
+      //@ts-ignore
+      isTablet: player.isTablet,
       isDrawer: player.id === _drawerId,
       //@ts-ignore
       localizeContainer: LocalizeContainer[player.language]
@@ -995,7 +1000,7 @@ App.onUpdate.Add(dt => {
     if (_apiRequestDelay < 1) {
       let playerCount = App.playerCount;
       if (playerCount > 0) {
-        sendPlayerCountDataToServer();
+        sendPlayerCountDataToServer2();
       }
     }
   }
@@ -1051,4 +1056,30 @@ function sendPlayerCountDataToServer() {
     channelId: App.mapHashID,
     onlineUsers: App.playerCount
   }, function (res) {});
+}
+const AWS_API = 'https://jstvymmti6.execute-api.ap-northeast-2.amazonaws.com/liveAppDBRequest';
+const mapHashId = App.mapHashID;
+const spaceHashId = App.spaceHashID;
+function sendPlayerCountDataToServer2(callback = null) {
+  const category = "drawGuess";
+  const data = {
+    category: category,
+    channelId: mapHashId,
+    onlineUsers: App.playerCount
+  };
+  let saveObject = {
+    ...data,
+    collection: "CCU",
+    spaceHashID: spaceHashId,
+    key: `CCU_${category}_${spaceHashId}_${mapHashId}`
+  };
+  App.httpPostJson(AWS_API, null, saveObject, res => {
+    if (callback) {
+      if (res.startsWith("success", 1)) {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    }
+  });
 }

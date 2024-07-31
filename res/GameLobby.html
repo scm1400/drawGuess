@@ -81,7 +81,8 @@
             padding: 10px;
             width: 380px;
             height: 300px;
-            background-color: rgb(74 227 162);;
+            background-color: rgb(74 227 162);
+            ;
             background-repeat: no-repeat;
             background-position: top right;
             border-radius: 4px;
@@ -98,7 +99,7 @@
             padding: 20px 20px;
         }
 
-        .button-join > span {
+        .button-join>span {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -154,7 +155,7 @@
             margin-bottom: 6px;
         }
 
-        .li-header > div {
+        .li-header>div {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -175,7 +176,7 @@
             margin-bottom: 6px;
         }
 
-        .li-func > div {
+        .li-func>div {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -183,7 +184,7 @@
             height: 20px;
         }
 
-        .li-func > .quit {
+        .li-func>.quit {
             cursor: pointer;
             background-color: #f22323;
         }
@@ -260,7 +261,7 @@
             align-items: center;
             display: flex;
         }
-        
+
         .right {
             display: flex;
             font-size: 16px;
@@ -274,7 +275,7 @@
                 font-size: 11px;
             }
 
-            .container > div > div.header {
+            .container>div>div.header {
                 display: none;
             }
 
@@ -318,27 +319,27 @@
 </head>
 
 <body>
-<div class="container hidden">
-    <div class="box">
-        <div class="header">
-            그림퀴즈 대기실
-        </div>
-        <div class="list">
-            <div class="li-func">
-                <div class="header-level"></div>
-                <div class="header-player"></div>
-                <div class="header-run-count"></div>
-                <div></div>
-                <div class="quit" onclick="LeaveRoom()">나가기</div>
+    <div class="container hidden">
+        <div class="box">
+            <div class="header">
+                그림퀴즈 대기실
             </div>
-            <div class="li-header">
-                <div class="header-level">레벨</div>
-                <div class="header-player">닉네임</div>
-                <div class="header-run-count">탈주</div>
-                <div></div>
-                <div></div>
-            </div>
-            <!--
+            <div class="list">
+                <div class="li-func">
+                    <div class="header-level"></div>
+                    <div class="header-player"></div>
+                    <div class="header-run-count"></div>
+                    <div></div>
+                    <div class="quit" onclick="LeaveRoom()">나가기</div>
+                </div>
+                <div class="li-header">
+                    <div class="header-level">레벨</div>
+                    <div class="header-player">닉네임</div>
+                    <div class="header-run-count">탈주</div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <!--
             <div class="li">
                 <div class="level">Lv1</div>
                 <div class="name">닉네임</div>
@@ -350,196 +351,196 @@
                 </button>
             </div>
             -->
+            </div>
         </div>
     </div>
-</div>
-<div class="container-ready">
-    <div class="box small">
-        <div class="header">
-            그림 퀴즈
-        </div>
-        <div id="room-list" class="room-list">
+    <div class="container-ready">
+        <div class="box small">
+            <div class="header">
+                그림 퀴즈
+            </div>
+            <div id="room-list" class="room-list">
+
+            </div>
 
         </div>
+        <script>
+            let _myID;
+            let roomNum;
 
-    </div>
-    <script>
-        let _myID;
-        let roomNum;
-
-        window.addEventListener("message", (e) => {
-            switch (e.data.type) {
-                case "init":
-                    if (_myID === undefined) {
-                        _myID = e.data.id;
-                    }
-
-                    renderRoomList(e.data.roomList);
-
-                    if (e.data.isMobile) {
-                        //태블릿
-                        if (window.screen.width >= 768) {
-                            window.parent.postMessage({
-                                type: 'WidgetRearrange',
-                                top: '-40px', // 위치조정
-                                left: '60px',
-                                anchor: 'topright'
-                            }, "*");
-                        } else {
-                            document.querySelector(".room-list").style.height = "120px";
-                            document.querySelector(".box.small").style.padding = "10px";
-
-                            window.parent.postMessage({
-                                type: 'WidgetRearrange',
-                                top: '40px', // 위치조정
-                                width: '320px',
-                                anchor: "top",
-                                left: "30px"
-                            }, "*");
-
+            window.addEventListener("message", (e) => {
+                switch (e.data.type) {
+                    case "init":
+                        if (_myID === undefined) {
+                            _myID = e.data.id;
                         }
-                    } else {
-                        window.parent.postMessage({
-                            type: 'WidgetRearrange',
-                            top: '-12px', // 위치조정
-                            left: `-120px`
-                        }, "*");
-                    }
 
-                    break;
-                case "join":
-                    let data = e.data?.data;
-                    const participatingPlayers = data.roomData.participatingPlayers;
-                    if (data.id === _myID) {
-                        document.querySelector(".container-ready").classList.add("hidden");
-                        document.querySelector(".container").classList.remove("hidden");
-                    }
-                    renderRoomInfo(participatingPlayers);
+                        renderRoomList(e.data.roomList);
 
-                    break;
-                case "ready":
-                    let button = document.getElementById(e.data.id).querySelector(".button-ready");
-                    button.classList.add("ready");
-                    break;
-                case "cancel-ready":
-                    document.getElementById(e.data.id).querySelector(".button-ready").classList.remove("ready");
-                    break;
-                case "playerLeaveNotify":
-                    //console.log(e.data);
-                    if (e.data.id === _myID) {
+                        if (e.data.isMobile) {
+                            //태블릿
+                            if (e.data.isTablet) {
+                                window.parent.postMessage({
+                                    type: 'WidgetRearrange',
+                                    top: '-40px', // 위치조정
+                                    left: '60px',
+                                    anchor: 'topright'
+                                }, "*");
+                            } else {
+                                document.querySelector(".room-list").style.height = "120px";
+                                document.querySelector(".box.small").style.padding = "10px";
+
+                                window.parent.postMessage({
+                                    type: 'WidgetRearrange',
+                                    top: '40px', // 위치조정
+                                    width: '320px',
+                                    anchor: "top",
+                                    left: "30px"
+                                }, "*");
+
+                            }
+                        } else {
+                            window.parent.postMessage({
+                                type: 'WidgetRearrange',
+                                top: '-12px', // 위치조정
+                                left: `-120px`
+                            }, "*");
+                        }
+
+                        break;
+                    case "join":
+                        let data = e.data?.data;
+                        const participatingPlayers = data.roomData.participatingPlayers;
+                        if (data.id === _myID) {
+                            document.querySelector(".container-ready").classList.add("hidden");
+                            document.querySelector(".container").classList.remove("hidden");
+                        }
+                        renderRoomInfo(participatingPlayers);
+
+                        break;
+                    case "ready":
+                        let button = document.getElementById(e.data.id).querySelector(".button-ready");
+                        button.classList.add("ready");
+                        break;
+                    case "cancel-ready":
+                        document.getElementById(e.data.id).querySelector(".button-ready").classList.remove("ready");
+                        break;
+                    case "playerLeaveNotify":
+                        //console.log(e.data);
+                        if (e.data.id === _myID) {
+                            document.querySelector(".container-ready").classList.remove("hidden");
+                            document.querySelector(".container").classList.add("hidden");
+                        } else {
+                            DeleteList(e.data.id);
+                            renderRoomInfo(e.data.roomInfo.participatingPlayers);
+                        }
+                        break;
+                    case "kick":
+                        IncreaseKickCount(e.data.id);
+                        break;
+                    case "cancle-kick":
+                        DecreaseKickCount(e.data.id);
+                        break;
+                    case "kicked":
                         document.querySelector(".container-ready").classList.remove("hidden");
                         document.querySelector(".container").classList.add("hidden");
-                    } else {
-                        DeleteList(e.data.id);
-                        renderRoomInfo(e.data.roomInfo.participatingPlayers);
-                    }
-                    break;
-                case "kick":
-                    IncreaseKickCount(e.data.id);
-                    break;
-                case "cancle-kick":
-                    DecreaseKickCount(e.data.id);
-                    break;
-                case "kicked":
-                    document.querySelector(".container-ready").classList.remove("hidden");
-                    document.querySelector(".container").classList.add("hidden");
-                    //DeleteList(e.data.id);
-                    break;
-                case "refreshGameLobbyWidget":
-                    refreshRoomList(e.data.roomList);
-                    break;
-            }
-        })
-
-        function renderRoomList(roomList) {
-            for (const roomData of Object.values(roomList)) {
-                createRoomElement(roomData);
-            }
-        }
-
-        function refreshRoomList(roomList) {
-            document.getElementById("room-list").innerHTML = "";
-            for (const roomData of Object.values(roomList)) {
-                createRoomElement(roomData);
-            }
-        }
-
-        function createRoomElement(roomData) {
-            // 방 전체를 담을 최상위 div 생성
-            const roomDiv = document.createElement('div');
-            roomDiv.className = 'room';
-            roomDiv.setAttribute('data-roomNum', roomData.roomNum);
-
-            // 방 번호를 표시하는 div 생성
-            const roomNumDiv = document.createElement('div');
-            roomNumDiv.className = 'room-num';
-            roomNumDiv.textContent = `${roomData.roomNum}번방`;
-            roomDiv.appendChild(roomNumDiv);
-
-            // 오른쪽 컨테이너 div 생성
-            const rightDiv = document.createElement('div');
-            rightDiv.className = 'right';
-
-            // 참여 인원 수를 표시하는 div 생성
-            const playerCountDiv = document.createElement('div');
-            playerCountDiv.className = 'room-player-count';
-
-            const spanPlayerCount = document.createElement('span');
-            spanPlayerCount.className = 'player-count';
-            spanPlayerCount.textContent = Object.keys(roomData.participatingPlayers).length;
-
-            const spanText = document.createElement('span');
-            spanText.textContent = '명 참여중';
-
-            playerCountDiv.appendChild(spanPlayerCount);
-            playerCountDiv.appendChild(spanText);
-
-            // 참가 버튼 생성
-            const joinButton = document.createElement('div');
-            joinButton.className = 'button-join';
-            if (roomData.gameStarted) {
-                joinButton.classList.add("ing");
-                joinButton.textContent = '게임중';
-            } else {
-                joinButton.textContent = '참가';
-            }
-
-            joinButton.onclick = function () {
-                join(this);
-            };
-
-            rightDiv.appendChild(playerCountDiv);
-            rightDiv.appendChild(joinButton);
-
-            // 최상위 div에 오른쪽 컨테이너 div 추가
-            roomDiv.appendChild(rightDiv);
-
-            document.getElementById("room-list").appendChild(roomDiv);
-        }
-
-        function join(el) {
-            let parentElement = el.parentElement
-            while (true) {
-                if (parentElement.classList.contains("room")) {
-                    let roomNum = parentElement.dataset.roomnum;
-                    window.parent.postMessage({type: "join", roomNum: roomNum}, "*")
-                    break;
+                        //DeleteList(e.data.id);
+                        break;
+                    case "refreshGameLobbyWidget":
+                        refreshRoomList(e.data.roomList);
+                        break;
                 }
-                parentElement = parentElement.parentElement
-            }
-        }
+            })
 
-        function renderRoomInfo(data) {
-            if (typeof data === 'object') {
-                document.querySelectorAll(".li").forEach((el) => {
-                    el.remove()
-                })
-                for (let [id, playerInfo] of Object.entries(data)) {
-                    let kickCount = 0;
-                    for (let playerInfo2 of Object.values(data)) {
-                        if (playerInfo2.agreedKickPlayerIDs.indexOf(id) > -1) kickCount++
+            function renderRoomList(roomList) {
+                for (const roomData of Object.values(roomList)) {
+                    createRoomElement(roomData);
+                }
+            }
+
+            function refreshRoomList(roomList) {
+                document.getElementById("room-list").innerHTML = "";
+                for (const roomData of Object.values(roomList)) {
+                    createRoomElement(roomData);
+                }
+            }
+
+            function createRoomElement(roomData) {
+                // 방 전체를 담을 최상위 div 생성
+                const roomDiv = document.createElement('div');
+                roomDiv.className = 'room';
+                roomDiv.setAttribute('data-roomNum', roomData.roomNum);
+
+                // 방 번호를 표시하는 div 생성
+                const roomNumDiv = document.createElement('div');
+                roomNumDiv.className = 'room-num';
+                roomNumDiv.textContent = `${roomData.roomNum}번방`;
+                roomDiv.appendChild(roomNumDiv);
+
+                // 오른쪽 컨테이너 div 생성
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'right';
+
+                // 참여 인원 수를 표시하는 div 생성
+                const playerCountDiv = document.createElement('div');
+                playerCountDiv.className = 'room-player-count';
+
+                const spanPlayerCount = document.createElement('span');
+                spanPlayerCount.className = 'player-count';
+                spanPlayerCount.textContent = Object.keys(roomData.participatingPlayers).length;
+
+                const spanText = document.createElement('span');
+                spanText.textContent = '명 참여중';
+
+                playerCountDiv.appendChild(spanPlayerCount);
+                playerCountDiv.appendChild(spanText);
+
+                // 참가 버튼 생성
+                const joinButton = document.createElement('div');
+                joinButton.className = 'button-join';
+                if (roomData.gameStarted) {
+                    joinButton.classList.add("ing");
+                    joinButton.textContent = '게임중';
+                } else {
+                    joinButton.textContent = '참가';
+                }
+
+                joinButton.onclick = function () {
+                    join(this);
+                };
+
+                rightDiv.appendChild(playerCountDiv);
+                rightDiv.appendChild(joinButton);
+
+                // 최상위 div에 오른쪽 컨테이너 div 추가
+                roomDiv.appendChild(rightDiv);
+
+                document.getElementById("room-list").appendChild(roomDiv);
+            }
+
+            function join(el) {
+                let parentElement = el.parentElement
+                while (true) {
+                    if (parentElement.classList.contains("room")) {
+                        let roomNum = parentElement.dataset.roomnum;
+                        window.parent.postMessage({ type: "join", roomNum: roomNum }, "*")
+                        break;
                     }
-                    const innerHTML = `<div class="level">${playerInfo.title === "비로그인" ? "비로그인" : "Lv." + playerInfo.level}</div>
+                    parentElement = parentElement.parentElement
+                }
+            }
+
+            function renderRoomInfo(data) {
+                if (typeof data === 'object') {
+                    document.querySelectorAll(".li").forEach((el) => {
+                        el.remove()
+                    })
+                    for (let [id, playerInfo] of Object.entries(data)) {
+                        let kickCount = 0;
+                        for (let playerInfo2 of Object.values(data)) {
+                            if (playerInfo2.agreedKickPlayerIDs.indexOf(id) > -1) kickCount++
+                        }
+                        const innerHTML = `<div class="level">${playerInfo.title === "비로그인" ? "비로그인" : "Lv." + playerInfo.level}</div>
                             <div class="name">${playerInfo.name}</div>
                             <div class="run-count">${playerInfo.abandonCount ? playerInfo.abandonCount : 0}</div>
                             <button onClick="Ready(this)" class="button-ready ${playerInfo.isReady ? "ready" : ""}"><span style="height: 100%;">준비</span></button>
@@ -547,67 +548,67 @@
                                 <span style="height: 100%;">강퇴</span>
                                 <span style="height: 100%; padding-top: 4px;" class="kick-count">${kickCount}</span>
                             </button>`;
-                    if (document.getElementById(id)) {
-                        document.getElementById(id).innerHTML = innerHTML;
-                    } else {
-                        let listTemplate = `
+                        if (document.getElementById(id)) {
+                            document.getElementById(id).innerHTML = innerHTML;
+                        } else {
+                            let listTemplate = `
                         <div class="li" id=${id}>
                             ${innerHTML}
                         </div>`
-                        document.querySelector(".list").innerHTML += listTemplate;
+                            document.querySelector(".list").innerHTML += listTemplate;
+                        }
+
                     }
-
                 }
             }
-        }
 
-        function LeaveRoom() {
-            window.parent.postMessage({type: "leaveRoom"}, "*")
-        }
+            function LeaveRoom() {
+                window.parent.postMessage({ type: "leaveRoom" }, "*")
+            }
 
-        function Kick(el) {
-            window.parent.postMessage({type: "kick", targetId: el.parentElement.id}, "*")
-        }
+            function Kick(el) {
+                window.parent.postMessage({ type: "kick", targetId: el.parentElement.id }, "*")
+            }
 
-        function Ready(el) {
-            if (el.parentElement.id === _myID) {
-                if (el.classList.contains("ready")) {
-                    window.parent.postMessage({type: "cancel-ready"}, "*")
+            function Ready(el) {
+                if (el.parentElement.id === _myID) {
+                    if (el.classList.contains("ready")) {
+                        window.parent.postMessage({ type: "cancel-ready" }, "*")
+                    } else {
+                        window.parent.postMessage({ type: "ready" }, "*")
+                    }
+                }
+            }
+
+            function DeleteList(id) {
+                let targetEl = document.getElementById(id);
+                targetEl.parentNode.removeChild(targetEl);
+            }
+
+            function IncreaseKickCount(id) {
+                let targetEl = document.getElementById(id);
+                targetEl.querySelector(".kick-count").innerText = parseInt(targetEl.querySelector(".kick-count").innerText) + 1;
+            }
+
+            function DecreaseKickCount(arr) {
+                if (Array.isArray(arr)) {
+                    for (let id of arr) {
+                        let targetEl = document.getElementById(id);
+                        if (targetEl) {
+                            targetEl.querySelector(".kick-count").innerText = parseInt(targetEl.querySelector(".kick-count").innerText) - 1;
+                        }
+                    }
                 } else {
-                    window.parent.postMessage({type: "ready"}, "*")
-                }
-            }
-        }
-
-        function DeleteList(id) {
-            let targetEl = document.getElementById(id);
-            targetEl.parentNode.removeChild(targetEl);
-        }
-
-        function IncreaseKickCount(id) {
-            let targetEl = document.getElementById(id);
-            targetEl.querySelector(".kick-count").innerText = parseInt(targetEl.querySelector(".kick-count").innerText) + 1;
-        }
-
-        function DecreaseKickCount(arr) {
-            if (Array.isArray(arr)) {
-                for (let id of arr) {
+                    let id = arr;
                     let targetEl = document.getElementById(id);
                     if (targetEl) {
                         targetEl.querySelector(".kick-count").innerText = parseInt(targetEl.querySelector(".kick-count").innerText) - 1;
                     }
-                }
-            } else {
-                let id = arr;
-                let targetEl = document.getElementById(id);
-                if (targetEl) {
-                    targetEl.querySelector(".kick-count").innerText = parseInt(targetEl.querySelector(".kick-count").innerText) - 1;
+
                 }
 
             }
-
-        }
-    </script>
+        </script>
 </body>
 
 </html>
