@@ -607,12 +607,12 @@ class PlayerInfo {
 
   // 경험치 추가 및 레벨 업 체크
   addExp(player, exp) {
+    this.exp += exp;
     const needExp = _levelTable[this.level + 1] ?? 40000;
     const progressPercentage = Math.floor(this.exp / needExp * 100);
     const message = `[경험치 획득] 🎉 ${exp} EXP 획득!\n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
-    player.sendMessage(message, 0x00ffff);
-    App.sayToStaffs(message + `\n${player.name}`, 0x00ffff);
-    this.exp += exp;
+    player.sendMessage(message, 0x0011ff);
+    App.sayToStaffs(message + `\n${player.name}`, 0x0011ff);
     this.checkLevelUp(App.getPlayerByID(this.id));
   }
 
@@ -627,6 +627,9 @@ class PlayerInfo {
       } else {
         break;
       }
+    }
+    if (!this.level) {
+      this.level = newLevel;
     }
 
     // 레벨 업이 발생했을 경우
