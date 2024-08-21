@@ -3,7 +3,9 @@
  */
 
 import "zep-script";
-import {ScriptPlayer} from "zep-script";
+import { ScriptPlayer } from "zep-script";
+
+
 
 const Language = {
     ko: "ko",
@@ -292,7 +294,7 @@ class GameRoom {
                 id: player.id,
             });
 
-            player.setCameraTarget( this.locationInfo.x + this.locationInfo.width, this.locationInfo.y + this.locationInfo.height/2, 0 );
+            player.setCameraTarget(this.locationInfo.x + this.locationInfo.width, this.locationInfo.y + this.locationInfo.height / 2, 0);
 
             _gameRoomManager.refreshGameLobbyWidget();
         }
@@ -328,6 +330,10 @@ class GameRoom {
             //@ts-ignore
             player.setCameraTarget("");
             player.sendUpdated();
+        }
+
+        if (Object.keys(this.participatingPlayers).length <= 1) {
+            _gameRoomManager.resetGameRoom(this.roomNum)
         }
 
         _gameRoomManager.refreshGameLobbyWidget();
@@ -394,15 +400,15 @@ class GameRoom {
                     const playerId = player.id;
                     //@ts-ignore
                     player.showPrompt(LocalizeContainer[player.language].category_free, function (inputText) {
-                            if (_drawerId !== playerId) return;
-                            if (inputText) {
-                                gameRoom.gamePlayInfo.currentQuiz = inputText;
-                                gameRoom.gamePlayInfo.currentQuizCategory = DrawCategory.FREE;
-                                gameRoom.startGame();
-                            } else {
-                                gameRoom.initGame();
-                            }
-                        },
+                        if (_drawerId !== playerId) return;
+                        if (inputText) {
+                            gameRoom.gamePlayInfo.currentQuiz = inputText;
+                            gameRoom.gamePlayInfo.currentQuizCategory = DrawCategory.FREE;
+                            gameRoom.startGame();
+                        } else {
+                            gameRoom.initGame();
+                        }
+                    },
                         //@ts-ignore
                         {
                             //@ts-ignore
@@ -679,6 +685,95 @@ let _gameRoomManager: GameRoomManager;
 
 const _spawnPoint = [17, 34];
 
+interface GamePlayer extends ScriptPlayer {
+    tag: {
+        playerInfo: PlayerInfo,
+        [key: string]: any,
+    }
+}
+
+const _levelTable = [
+    -1, 0, 615, 1230, 1845, 2460, 3075, 3690, 4305, 4920, 5535, 6150, 6756, 7380, 7995, 8610, 9225, 9840, 10455, 11070, 11685, 12300, 12915, 13530, 14145, 14760, 15375, 15990, 16605, 17220, 17835, 18450, 19065, 19680, 20295, 20910, 21525, 22140, 22755, 23377, 23985, 24600, 25125, 25830, 26445, 27060, 27675, 28290, 28905, 29520, 30135, 30750, 31365, 31980, 32595, 33210, 33825, 34440, 35055, 35670, 36285, 36900, 37515, 38130, 38745, 39360, 40000
+]
+
+class PlayerInfo {
+    id: string;
+    exp: number;
+    drawCount: number;
+    guessCorrectForMyDrawings: number;
+    correctGuesses: number;
+    level: number;
+    totalPlayTime: number; // seconds
+    gamesPlayed: number;
+    gamesWon: number;
+
+
+    constructor(player: GamePlayer) {
+        this.id = player.id;
+        const info = parseJsonString(player.storage) || {};
+        this.exp = info.exp ?? 0;
+        this.checkLevelUp(player);
+        this.drawCount = info.drawCount ?? 0;
+        this.guessCorrectForMyDrawings = info.guessCorrectForMyDrawings ?? 0;
+        this.correctGuesses = info.correctGuesses ?? 0;
+        this.totalPlayTime = info.totalPlayTime ?? 0;
+        this.gamesPlayed = info.gamesPlayed ?? 0;
+        this.gamesWon = info.gamesWon ?? 0;
+    }
+
+    // 경험치 추가 및 레벨 업 체크
+    addExp(player: GamePlayer, exp: number): void {
+        const needExp = _levelTable[this.level + 1] ?? 40000;
+        const progressPercentage = Math.floor((this.exp / needExp) * 100);
+        const message = `[경험치 획득] 🎉 ${exp} EXP 획득!\n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
+        player.sendMessage(
+            message,
+            0x00ffff
+        );
+
+        ScriptApp.sayToStaffs(message + `\n${player.name}`,0x00ffff);
+
+        this.exp += exp;
+        this.checkLevelUp(ScriptApp.getPlayerByID(this.id));
+    }
+
+    // 레벨 업을 체크하는 메서드
+    private checkLevelUp(player: GamePlayer): void {
+        let newLevel = this.level || 1;
+
+        // 현재 레벨에 맞는 경험치 테이블을 검사
+        for (let i = this.level; i < _levelTable.length; i++) {
+            if (this.exp >= _levelTable[i]) {
+                newLevel = i;
+            } else {
+                break;
+            }
+        }
+
+        // 레벨 업이 발생했을 경우
+        if (newLevel > this.level) {
+            this.level = newLevel;
+        }
+
+        player.title = `🖍️${newLevel}레벨`
+        player.sendUpdated();
+    }
+
+    // 추가적인 메서드들
+    incrementDrawCount(): void { this.drawCount += 1; }
+    incrementGuessCorrectForMyDrawings(): void { this.guessCorrectForMyDrawings += 1; }
+    incrementCorrectGuesses(): void { this.correctGuesses += 1; }
+    incrementGamesPlayed(): void { this.gamesPlayed += 1; }
+    incrementGamesWon(): void { this.gamesWon += 1; }
+    addPlayTime(seconds: number): void { this.totalPlayTime += seconds; }
+
+    // 현재 플레이어의 정보를 문자열로 반환
+    getPlayerInfo(): string {
+        return `Level: ${this.level}, EXP: ${this.exp}, Draw Count: ${this.drawCount}, Guesses Correct For My Drawings: ${this.guessCorrectForMyDrawings}, Correct Guesses: ${this.correctGuesses}, Games Played: ${this.gamesPlayed}, Games Won: ${this.gamesWon}, Total Play Time: ${this.totalPlayTime}`;
+    }
+}
+
+
 ScriptApp.onInit.Add(() => {
     if (!_gameRoomManager) {
         _gameRoomManager = new GameRoomManager();
@@ -689,9 +784,14 @@ ScriptApp.onInit.Add(() => {
 })
 
 
-ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
+ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
     _apiRequestDelay = 3;
-    player.tag = {};
+    if (!player.isGuest) {
+        player.tag = {
+            playerInfo: new PlayerInfo(player)
+        };
+    }
+
 
     if (ScriptApp.mapHashID == "yPzLZ7") {
         //@ts-ignore
@@ -712,9 +812,14 @@ ScriptApp.onJoinPlayer.Add(function (player: ScriptPlayer) {
     }
 });
 
-ScriptApp.onLeavePlayer.Add(function (player) {
+ScriptApp.onLeavePlayer.Add(function (player: GamePlayer) {
+    const playerStorage = parseJsonString(player.storage) || {};
+    playerStorage.playerInfo = player.tag.playerInfo;
+    player.storage = JSON.stringify(playerStorage);
+    player.save();
+
     _apiRequestDelay = 3;
-    
+
     if (_isMiniGame) {
         if (_drawerId === player.id) {
             ScriptApp.runLater(() => {
@@ -735,7 +840,7 @@ ScriptApp.onLeavePlayer.Add(function (player) {
         }
     }
 
-    if(ScriptApp.playerCount === 0) {
+    if (ScriptApp.playerCount === 0) {
         sendPlayerCountDataToServer2();
     }
 })
@@ -843,19 +948,19 @@ function initGame(player: ScriptPlayer) {
                 const playerId = player.id;
                 //@ts-ignore
                 player.showPrompt(LocalizeContainer[player.language].category_free, function (inputText) {
-                        if (_drawerId !== playerId) return;
-                        if (inputText) {
-                            _currentQuiz = inputText;
-                            _currentCategory = DrawCategory.FREE;
-                            startGame();
+                    if (_drawerId !== playerId) return;
+                    if (inputText) {
+                        _currentQuiz = inputText;
+                        _currentCategory = DrawCategory.FREE;
+                        startGame();
+                    } else {
+                        if (_isMiniGame) {
+                            ScriptApp.forceDestroy();
                         } else {
-                            if (_isMiniGame) {
-                                ScriptApp.forceDestroy();
-                            } else {
-                                initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
-                            }
+                            initGame(ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)]);
                         }
-                    },
+                    }
+                },
                     //@ts-ignore
                     {
                         //@ts-ignore
@@ -1135,7 +1240,7 @@ ScriptApp.onUpdate.Add((dt) => {
     }
 });
 
-ScriptApp.onSay.Add((player, text) => {
+ScriptApp.onSay.Add((player: GamePlayer, text) => {
     if (text == "!start") {
         startGame();
     }
@@ -1172,6 +1277,21 @@ ScriptApp.onSay.Add((player, text) => {
                 player.playSound("correct.mp3", false, true);
                 showSubLabelTypeI(player, "sub", LocalizeContainer[player.language].label_answer_player.replace("((name))", answererName).replace("((answer))", answer))
             })
+            let exp = 10;
+            if (gameRoom.gamePlayInfo.gameTime > _GAMETIME - 3) {
+                exp = 5;
+            } else if (gameRoom.gamePlayInfo.gameTime < _GAMETIME / 3 * 2) {
+                exp = 13
+            } else if (gameRoom.gamePlayInfo.gameTime < _GAMETIME / 2) {
+                exp = 15
+            } else if (gameRoom.gamePlayInfo.gameTime < _GAMETIME / 3) {
+                exp = 17
+            } else if (gameRoom.gamePlayInfo.gameTime < 5) {
+                exp = 20;
+            }
+
+            player.tag.playerInfo.addExp(player, exp);
+
             gameRoom.initGame(player.id);
         } else {
             //@ts-ignore
@@ -1204,21 +1324,32 @@ const mapHashId = ScriptApp.mapHashID;
 const spaceHashId = ScriptApp.spaceHashID;
 
 function sendPlayerCountDataToServer2(callback = null) {
-	const category = "drawGuess";
-	const data = {
-		category: category,
-		channelId: mapHashId,
-		onlineUsers: ScriptApp.playerCount,
-	};
-	let saveObject = { ...data, collection: "CCU", spaceHashID: spaceHashId, key: `CCU_${category}_${spaceHashId}_${mapHashId}` };
+    const category = "drawGuess";
+    const data = {
+        category: category,
+        channelId: mapHashId,
+        onlineUsers: ScriptApp.playerCount,
+    };
+    let saveObject = { ...data, collection: "CCU", spaceHashID: spaceHashId, key: `CCU_${category}_${spaceHashId}_${mapHashId}` };
 
-	ScriptApp.httpPostJson(AWS_API, null, saveObject, (res) => {
-		if (callback) {
-			if (res.startsWith("success", 1)) {
-				callback(true);
-			} else {
-				callback(false);
-			}
-		}
-	});
+    ScriptApp.httpPostJson(AWS_API, null, saveObject, (res) => {
+        if (callback) {
+            if (res.startsWith("success", 1)) {
+                callback(true);
+            } else {
+                callback(false);
+            }
+        }
+    });
+}
+
+function parseJsonString(str: string): any | false {
+    if (!str) return false;
+    try {
+        // JSON으로 파싱을 시도하고 결과를 반환합니다.
+        return JSON.parse(str);
+    } catch (e) {
+        // 파싱 중 오류가 발생하면 false를 반환합니다.
+        return false;
+    }
 }
