@@ -709,8 +709,9 @@ class PlayerInfo {
 
 
     constructor(player: GamePlayer) {
+        const playerStorage = parseJsonString(player.storage);
+        const info = playerStorage ? (playerStorage.playerInfo || {}) : {};
         this.id = player.id;
-        const info = parseJsonString(player.storage) || {};
         this.exp = info.exp ?? 0;
         this.checkLevelUp(player);
         this.drawCount = info.drawCount ?? 0;
@@ -816,6 +817,8 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
         spawnAtLobby(player);
         showGameLobbyWidget(player);
     }
+
+    ScriptApp.sayToStaffs(JSON.stringify({ name: player.name, ...player.tag.playerInfo }))
 });
 
 function spawnAtLobby(player) {

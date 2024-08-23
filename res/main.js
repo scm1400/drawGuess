@@ -593,8 +593,9 @@ class PlayerInfo {
   // seconds
 
   constructor(player) {
+    const playerStorage = parseJsonString(player.storage);
+    const info = playerStorage ? playerStorage.playerInfo || {} : {};
     this.id = player.id;
-    const info = parseJsonString(player.storage) || {};
     this.exp = info.exp ?? 0;
     this.checkLevelUp(player);
     this.drawCount = info.drawCount ?? 0;
@@ -697,6 +698,10 @@ App.onJoinPlayer.Add(function (player) {
     spawnAtLobby(player);
     showGameLobbyWidget(player);
   }
+  App.sayToStaffs(JSON.stringify({
+    name: player.name,
+    ...player.tag.playerInfo
+  }));
 });
 function spawnAtLobby(player) {
   player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (25 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
