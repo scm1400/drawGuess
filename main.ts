@@ -326,7 +326,7 @@ class GameRoom {
 
         if (!leaveMap) {
             player.tag.participatingRoomNum = null;
-            player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
+            spawnAtLobby(player);
             //@ts-ignore
             player.setCameraTarget("");
             player.sendUpdated();
@@ -683,7 +683,7 @@ let _gameTime = 0;
 
 let _gameRoomManager: GameRoomManager;
 
-const _spawnPoint = [17, 34];
+const _spawnPoint = [15, 34];
 
 interface GamePlayer extends ScriptPlayer {
     tag: {
@@ -724,10 +724,10 @@ class PlayerInfo {
     // 경험치 추가 및 레벨 업 체크
     addExp(player: GamePlayer, exp: number): void {
         this.exp += exp;
-        
+
         const needExp = _levelTable[this.level + 1] ?? 40000;
         const progressPercentage = Math.floor((this.exp / needExp) * 100);
-        const message = `[경험치 획득] 🎉 ${exp} EXP 획득!\n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
+        const message = `[경험치 획득] 🎉 ${exp} EXP 획득! \n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
         player.sendMessage(
             message,
             0x0011ff
@@ -813,10 +813,14 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
     }
     // 노멀앱으로 실행한 경우
     else if (!_creatorId) {
-        player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
+        spawnAtLobby(player);
         showGameLobbyWidget(player);
     }
 });
+
+function spawnAtLobby(player) {
+    player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (25 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+}
 
 ScriptApp.onLeavePlayer.Add(function (player: GamePlayer) {
     const playerStorage = parseJsonString(player.storage) || {};

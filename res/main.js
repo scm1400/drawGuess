@@ -258,7 +258,7 @@ class GameRoom {
     });
     if (!leaveMap) {
       player.tag.participatingRoomNum = null;
-      player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
+      spawnAtLobby(player);
       //@ts-ignore
       player.setCameraTarget("");
       player.sendUpdated();
@@ -587,7 +587,7 @@ let _creatorId = "";
 let _isMiniGame = false;
 let _gameTime = 0;
 let _gameRoomManager;
-const _spawnPoint = [17, 34];
+const _spawnPoint = [15, 34];
 const _levelTable = [-1, 0, 615, 1230, 1845, 2460, 3075, 3690, 4305, 4920, 5535, 6150, 6756, 7380, 7995, 8610, 9225, 9840, 10455, 11070, 11685, 12300, 12915, 13530, 14145, 14760, 15375, 15990, 16605, 17220, 17835, 18450, 19065, 19680, 20295, 20910, 21525, 22140, 22755, 23377, 23985, 24600, 25125, 25830, 26445, 27060, 27675, 28290, 28905, 29520, 30135, 30750, 31365, 31980, 32595, 33210, 33825, 34440, 35055, 35670, 36285, 36900, 37515, 38130, 38745, 39360, 40000];
 class PlayerInfo {
   // seconds
@@ -610,7 +610,7 @@ class PlayerInfo {
     this.exp += exp;
     const needExp = _levelTable[this.level + 1] ?? 40000;
     const progressPercentage = Math.floor(this.exp / needExp * 100);
-    const message = `[경험치 획득] 🎉 ${exp} EXP 획득!\n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
+    const message = `[경험치 획득] 🎉 ${exp} EXP 획득! \n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
     player.sendMessage(message, 0x0011ff);
     App.sayToStaffs(message + `\n${player.name}`, 0x0011ff);
     this.checkLevelUp(App.getPlayerByID(this.id));
@@ -694,10 +694,13 @@ App.onJoinPlayer.Add(function (player) {
   }
   // 노멀앱으로 실행한 경우
   else if (!_creatorId) {
-    player.spawnAt(_spawnPoint[0], _spawnPoint[1], 1);
+    spawnAtLobby(player);
     showGameLobbyWidget(player);
   }
 });
+function spawnAtLobby(player) {
+  player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (25 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+}
 App.onLeavePlayer.Add(function (player) {
   const playerStorage = parseJsonString(player.storage) || {};
   playerStorage.playerInfo = player.tag.playerInfo;
