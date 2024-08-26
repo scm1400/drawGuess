@@ -287,7 +287,8 @@ class GameRoom {
                 isReady: false
             };
             this.playSoundToPlayers("joinSound.mp3");
-            player.spawnAt(Math.floor(this.locationInfo.x + 1), Math.floor(this.locationInfo.y + this.locationInfo.height / 2), 1);
+            this.spawnAtGameRoom(player);
+
             this.sendMessageToPlayerWidget({
                 type: "join",
                 roomData: this,
@@ -298,6 +299,10 @@ class GameRoom {
 
             _gameRoomManager.refreshGameLobbyWidget();
         }
+    }
+
+    spawnAtGameRoom(player) {
+        player.spawnAt(Math.floor(this.locationInfo.x + 1) + Math.floor(Math.random() * 5), Math.floor(this.locationInfo.y + this.locationInfo.height / 2) + (Math.floor(Math.random() * 7) - 3), 1);
     }
 
     playSoundToPlayers(fileName: string) {
@@ -1274,7 +1279,7 @@ ScriptApp.onSay.Add((player: GamePlayer, text) => {
                 player.tag.playerInfo.incrementCorrectGuesses();
 
                 const drawerPlayer = ScriptApp.getPlayerByID(_drawerId) as GamePlayer;
-                if(drawerPlayer) {
+                if (drawerPlayer) {
                     drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
                 }
                 initGame(player);
