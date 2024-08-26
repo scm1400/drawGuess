@@ -822,7 +822,7 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
 });
 
 function spawnAtLobby(player) {
-    player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (25 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+    player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
 }
 
 ScriptApp.onLeavePlayer.Add(function (player: GamePlayer) {
@@ -926,7 +926,7 @@ function handleGameLobbyWidgetMessage(player: ScriptPlayer, data: any) {
     }
 }
 
-function initGame(player: ScriptPlayer) {
+function initGame(player: GamePlayer) {
     _start = false;
     for (let player of ScriptApp.players) {
         player.tag.join = false;
@@ -941,6 +941,7 @@ function initGame(player: ScriptPlayer) {
     }
 
     _drawerId = player.id;
+    player.tag.playerInfo.incrementDrawCount();
     player.tag.initCount = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
     player.tag.selectWidget.sendMessage({
@@ -1023,8 +1024,10 @@ function startGame() {
 
     // _drawerId = ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)].id;
     const drawerName = ScriptApp.getPlayerByID(_drawerId).name;
-    for (const player of ScriptApp.players) {
+    const gamePlayers = ScriptApp.players as GamePlayer[];
+    for (const player of gamePlayers) {
         if (!player) continue;
+        player.tag.playerInfo.incrementGamesPlayed();
         player.tag.join = true;
         if (player.tag.canvasWidget) {
             player.tag.canvasWidget.destroy();
@@ -1268,7 +1271,12 @@ ScriptApp.onSay.Add((player: GamePlayer, text) => {
                     //@ts-ignore
                     showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz))
                 }
+                player.tag.playerInfo.incrementCorrectGuesses();
 
+                const drawerPlayer = ScriptApp.getPlayerByID(_drawerId) as GamePlayer;
+                if(drawerPlayer) {
+                    drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
+                }
                 initGame(player);
             } else {
                 //@ts-ignore

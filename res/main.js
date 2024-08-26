@@ -704,7 +704,7 @@ App.onJoinPlayer.Add(function (player) {
   }));
 });
 function spawnAtLobby(player) {
-  player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (25 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+  player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
 }
 App.onLeavePlayer.Add(function (player) {
   const playerStorage = parseJsonString(player.storage) || {};
@@ -816,6 +816,7 @@ function initGame(player) {
     }
   }
   _drawerId = player.id;
+  player.tag.playerInfo.incrementDrawCount();
   player.tag.initCount = 10;
   player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
   player.tag.selectWidget.sendMessage({
@@ -897,8 +898,10 @@ function startGame() {
 
   // _drawerId = ScriptApp.players[Math.floor(Math.random() * ScriptApp.players.length)].id;
   const drawerName = App.getPlayerByID(_drawerId).name;
-  for (const player of App.players) {
+  const gamePlayers = App.players;
+  for (const player of gamePlayers) {
     if (!player) continue;
+    player.tag.playerInfo.incrementGamesPlayed();
     player.tag.join = true;
     if (player.tag.canvasWidget) {
       player.tag.canvasWidget.destroy();
@@ -1114,6 +1117,11 @@ App.onSay.Add((player, text) => {
         for (const otherPlayer of App.players) {
           //@ts-ignore
           showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz));
+        }
+        player.tag.playerInfo.incrementCorrectGuesses();
+        const drawerPlayer = App.getPlayerByID(_drawerId);
+        if (drawerPlayer) {
+          drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
         }
         initGame(player);
       } else {
