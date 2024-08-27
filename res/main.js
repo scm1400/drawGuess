@@ -144,7 +144,14 @@ class GameRoomManager {
   resetGameRoom(roomNum) {
     const gameRoom = this.getRoomByRoomNum(roomNum);
     if (!gameRoom) return;
+    let playTime = null;
+    if (gameRoom.gamePlayInfo.startAt) {
+      const playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
+    }
     gameRoom.actionToRoomPlayers(player => {
+      if (playTime) {
+        player.tag.playerInfo.addPlayTime(playTime);
+      }
       if (player.tag.selectWidget) {
         player.tag.selectWidget.destroy();
         player.tag.selectWidget = null;
@@ -184,6 +191,7 @@ class GamePlayInfo {
     this.drawerId = "";
     this.state = STATE.INIT;
     this.selectTimer = 10;
+    this.startAt = null;
   }
 }
 class GameRoom {
@@ -308,6 +316,7 @@ class GameRoom {
       this.initGame();
       return;
     }
+    drawer.tag.playerInfo.incrementDrawCount();
     this.gamePlayInfo.selectTimer = 10;
     drawer.tag.selectWidget = drawer.showWidget("selectCategory.html", "middle", 360, 400);
     drawer.tag.selectWidget.sendMessage({
@@ -378,8 +387,10 @@ class GameRoom {
     this.gamePlayInfo.state = STATE.PLAYING;
     this.playSoundToPlayers("init.mp3");
     this.gamePlayInfo.gameTime = _GAMETIME;
+    this.gamePlayInfo.startAt = Date.now();
     const drawerName = App.getPlayerByID(this.gamePlayInfo.drawerId).name;
     this.actionToRoomPlayers(player => {
+      player.tag.playerInfo.incrementGamesPlayed();
       if (player.tag.canvasWidget) {
         player.tag.canvasWidget.destroy();
       }
@@ -683,6 +694,10 @@ App.onJoinPlayer.Add(function (player) {
     player.tag = {
       playerInfo: new PlayerInfo(player)
     };
+    App.sayToStaffs(JSON.stringify({
+      name: player.name,
+      ...player.tag.playerInfo
+    }));
   }
   if (App.mapHashID == "yPzLZ7") {
     //@ts-ignore
@@ -701,10 +716,6 @@ App.onJoinPlayer.Add(function (player) {
     spawnAtLobby(player);
     showGameLobbyWidget(player);
   }
-  App.sayToStaffs(JSON.stringify({
-    name: player.name,
-    ...player.tag.playerInfo
-  }));
 });
 function spawnAtLobby(player) {
   player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
@@ -819,7 +830,6 @@ function initGame(player) {
     }
   }
   _drawerId = player.id;
-  player.tag.playerInfo.incrementDrawCount();
   player.tag.initCount = 10;
   player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
   player.tag.selectWidget.sendMessage({
@@ -904,7 +914,6 @@ function startGame() {
   const gamePlayers = App.players;
   for (const player of gamePlayers) {
     if (!player) continue;
-    player.tag.playerInfo.incrementGamesPlayed();
     player.tag.join = true;
     if (player.tag.canvasWidget) {
       player.tag.canvasWidget.destroy();
@@ -1121,11 +1130,6 @@ App.onSay.Add((player, text) => {
           //@ts-ignore
           showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz));
         }
-        player.tag.playerInfo.incrementCorrectGuesses();
-        const drawerPlayer = App.getPlayerByID(_drawerId);
-        if (drawerPlayer) {
-          drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
-        }
         initGame(player);
       } else {
         //@ts-ignore
@@ -1159,6 +1163,11 @@ App.onSay.Add((player, text) => {
         exp = 20;
       }
       player.tag.playerInfo.addExp(player, exp);
+      player.tag.playerInfo.incrementCorrectGuesses();
+      const drawerPlayer = App.getPlayerByID(_drawerId);
+      if (drawerPlayer) {
+        drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
+      }
       gameRoom.initGame(player.id);
     } else {
       //@ts-ignore
@@ -1181,6 +1190,7 @@ const AWS_API = 'https://jstvymmti6.execute-api.ap-northeast-2.amazonaws.com/liv
 const mapHashId = App.mapHashID;
 const spaceHashId = App.spaceHashID;
 function sendPlayerCountDataToServer2(callback = null) {
+  if (_isMiniGame) return;
   const category = "drawGuess";
   const data = {
     category: category,

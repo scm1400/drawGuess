@@ -162,7 +162,14 @@ class GameRoomManager {
     resetGameRoom(roomNum: number) {
         const gameRoom = this.getRoomByRoomNum(roomNum);
         if (!gameRoom) return;
-        gameRoom.actionToRoomPlayers((player: ScriptPlayer) => {
+        let playTime = null;
+        if (gameRoom.gamePlayInfo.startAt) {
+            const playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
+        }
+        gameRoom.actionToRoomPlayers((player: GamePlayer) => {
+            if (playTime) {
+                player.tag.playerInfo.addPlayTime(playTime);
+            }
             if (player.tag.selectWidget) {
                 player.tag.selectWidget.destroy();
                 player.tag.selectWidget = null;
@@ -225,6 +232,7 @@ class GamePlayInfo {
     currentQuizCategory: string;
     drawerId: string;
     state: number;
+    startAt: number;
 
     constructor() {
         this.turnCount = 0;
@@ -234,6 +242,7 @@ class GamePlayInfo {
         this.drawerId = "";
         this.state = STATE.INIT;
         this.selectTimer = 10;
+        this.startAt = null;
     }
 }
 
@@ -383,6 +392,8 @@ class GameRoom {
             this.initGame();
             return;
         }
+
+        drawer.tag.playerInfo.incrementDrawCount();
         this.gamePlayInfo.selectTimer = 10;
         drawer.tag.selectWidget = drawer.showWidget("selectCategory.html", "middle", 360, 400);
         drawer.tag.selectWidget.sendMessage({
@@ -454,9 +465,12 @@ class GameRoom {
         this.gamePlayInfo.state = STATE.PLAYING;
         this.playSoundToPlayers("init.mp3");
         this.gamePlayInfo.gameTime = _GAMETIME;
+        this.gamePlayInfo.startAt = Date.now();
+
 
         const drawerName = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId).name;
         this.actionToRoomPlayers((player: ScriptPlayer) => {
+            player.tag.playerInfo.incrementGamesPlayed();
             if (player.tag.canvasWidget) {
                 player.tag.canvasWidget.destroy();
             }
@@ -802,6 +816,7 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
         player.tag = {
             playerInfo: new PlayerInfo(player)
         };
+        ScriptApp.sayToStaffs(JSON.stringify({ name: player.name, ...player.tag.playerInfo }))
     }
 
 
@@ -823,7 +838,7 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
         showGameLobbyWidget(player);
     }
 
-    ScriptApp.sayToStaffs(JSON.stringify({ name: player.name, ...player.tag.playerInfo }))
+
 });
 
 function spawnAtLobby(player) {
@@ -946,7 +961,6 @@ function initGame(player: GamePlayer) {
     }
 
     _drawerId = player.id;
-    player.tag.playerInfo.incrementDrawCount();
     player.tag.initCount = 10;
     player.tag.selectWidget = player.showWidget("selectCategory.html", "middle", 360, 400);
     player.tag.selectWidget.sendMessage({
@@ -1032,7 +1046,6 @@ function startGame() {
     const gamePlayers = ScriptApp.players as GamePlayer[];
     for (const player of gamePlayers) {
         if (!player) continue;
-        player.tag.playerInfo.incrementGamesPlayed();
         player.tag.join = true;
         if (player.tag.canvasWidget) {
             player.tag.canvasWidget.destroy();
@@ -1276,12 +1289,6 @@ ScriptApp.onSay.Add((player: GamePlayer, text) => {
                     //@ts-ignore
                     showSubLabelTypeI(otherPlayer, "sub", LocalizeContainer[otherPlayer.language].label_answer_player.replace("((name))", player.name).replace("((answer))", _currentQuiz))
                 }
-                player.tag.playerInfo.incrementCorrectGuesses();
-
-                const drawerPlayer = ScriptApp.getPlayerByID(_drawerId) as GamePlayer;
-                if (drawerPlayer) {
-                    drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
-                }
                 initGame(player);
             } else {
                 //@ts-ignore
@@ -1318,6 +1325,13 @@ ScriptApp.onSay.Add((player: GamePlayer, text) => {
 
             player.tag.playerInfo.addExp(player, exp);
 
+            player.tag.playerInfo.incrementCorrectGuesses();
+
+            const drawerPlayer = ScriptApp.getPlayerByID(_drawerId) as GamePlayer;
+            if (drawerPlayer) {
+                drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
+            }
+
             gameRoom.initGame(player.id);
         } else {
             //@ts-ignore
@@ -1350,6 +1364,7 @@ const mapHashId = ScriptApp.mapHashID;
 const spaceHashId = ScriptApp.spaceHashID;
 
 function sendPlayerCountDataToServer2(callback = null) {
+    if (_isMiniGame) return;
     const category = "drawGuess";
     const data = {
         category: category,
