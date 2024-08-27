@@ -164,7 +164,7 @@ class GameRoomManager {
         if (!gameRoom) return;
         let playTime = null;
         if (gameRoom.gamePlayInfo.startAt) {
-            const playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
+            playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
         }
         gameRoom.actionToRoomPlayers((player: GamePlayer) => {
             if (playTime) {
@@ -366,12 +366,21 @@ class GameRoom {
         this.gameStarted = true;
         this.gamePlayInfo.state = STATE.INIT;
 
+        let firstGame = this.gamePlayInfo.turnCount === 0;
+        if (firstGame) {
+            this.gamePlayInfo.gameTime = _GAMETIME;
+            this.gamePlayInfo.startAt = Date.now();
+        }
+
         if (this.gamePlayInfo.turnCount === 10) {
             _gameRoomManager.resetGameRoom(this.roomNum);
             return;
         }
         this.gamePlayInfo.turnCount++;
         this.actionToRoomPlayers((player: ScriptPlayer) => {
+            if (firstGame) {
+                player.tag.playerInfo.incrementGamesPlayed();
+            }
             if (player.tag.canvasWidget) {
                 player.tag.canvasWidget.destroy();
                 player.tag.canvasWidget = null;
@@ -464,13 +473,12 @@ class GameRoom {
         }
         this.gamePlayInfo.state = STATE.PLAYING;
         this.playSoundToPlayers("init.mp3");
-        this.gamePlayInfo.gameTime = _GAMETIME;
-        this.gamePlayInfo.startAt = Date.now();
+
 
 
         const drawerName = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId).name;
         this.actionToRoomPlayers((player: ScriptPlayer) => {
-            player.tag.playerInfo.incrementGamesPlayed();
+
             if (player.tag.canvasWidget) {
                 player.tag.canvasWidget.destroy();
             }
@@ -791,7 +799,7 @@ class PlayerInfo {
     incrementCorrectGuesses(): void { this.correctGuesses += 1; }
     incrementGamesPlayed(): void { this.gamesPlayed += 1; }
     incrementGamesWon(): void { this.gamesWon += 1; }
-    addPlayTime(seconds: number): void { this.totalPlayTime += seconds; }
+    addPlayTime(milliseconds: number): void { this.totalPlayTime += milliseconds; }
 
     // 현재 플레이어의 정보를 문자열로 반환
     getPlayerInfo(): string {

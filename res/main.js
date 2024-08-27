@@ -146,7 +146,7 @@ class GameRoomManager {
     if (!gameRoom) return;
     let playTime = null;
     if (gameRoom.gamePlayInfo.startAt) {
-      const playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
+      playTime = Date.now() - gameRoom.gamePlayInfo.startAt;
     }
     gameRoom.actionToRoomPlayers(player => {
       if (playTime) {
@@ -290,12 +290,20 @@ class GameRoom {
   initGame(drawerId = null) {
     this.gameStarted = true;
     this.gamePlayInfo.state = STATE.INIT;
+    let firstGame = this.gamePlayInfo.turnCount === 0;
+    if (firstGame) {
+      this.gamePlayInfo.gameTime = _GAMETIME;
+      this.gamePlayInfo.startAt = Date.now();
+    }
     if (this.gamePlayInfo.turnCount === 10) {
       _gameRoomManager.resetGameRoom(this.roomNum);
       return;
     }
     this.gamePlayInfo.turnCount++;
     this.actionToRoomPlayers(player => {
+      if (firstGame) {
+        player.tag.playerInfo.incrementGamesPlayed();
+      }
       if (player.tag.canvasWidget) {
         player.tag.canvasWidget.destroy();
         player.tag.canvasWidget = null;
@@ -386,11 +394,8 @@ class GameRoom {
     }
     this.gamePlayInfo.state = STATE.PLAYING;
     this.playSoundToPlayers("init.mp3");
-    this.gamePlayInfo.gameTime = _GAMETIME;
-    this.gamePlayInfo.startAt = Date.now();
     const drawerName = App.getPlayerByID(this.gamePlayInfo.drawerId).name;
     this.actionToRoomPlayers(player => {
-      player.tag.playerInfo.incrementGamesPlayed();
       if (player.tag.canvasWidget) {
         player.tag.canvasWidget.destroy();
       }
@@ -671,8 +676,8 @@ class PlayerInfo {
   incrementGamesWon() {
     this.gamesWon += 1;
   }
-  addPlayTime(seconds) {
-    this.totalPlayTime += seconds;
+  addPlayTime(milliseconds) {
+    this.totalPlayTime += milliseconds;
   }
 
   // 현재 플레이어의 정보를 문자열로 반환
