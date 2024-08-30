@@ -471,10 +471,9 @@ class GameRoom {
         if (DEBUG) {
             ScriptApp.sayToAll("게임 시작!")
         }
+        this.gamePlayInfo.gameTime = _GAMETIME;
         this.gamePlayInfo.state = STATE.PLAYING;
         this.playSoundToPlayers("init.mp3");
-
-
 
         const drawerName = ScriptApp.getPlayerByID(this.gamePlayInfo.drawerId).name;
         this.actionToRoomPlayers((player: ScriptPlayer) => {

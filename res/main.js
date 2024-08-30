@@ -392,6 +392,7 @@ class GameRoom {
     if (DEBUG) {
       App.sayToAll("게임 시작!");
     }
+    this.gamePlayInfo.gameTime = _GAMETIME;
     this.gamePlayInfo.state = STATE.PLAYING;
     this.playSoundToPlayers("init.mp3");
     const drawerName = App.getPlayerByID(this.gamePlayInfo.drawerId).name;
