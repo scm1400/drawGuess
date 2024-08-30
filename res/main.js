@@ -695,15 +695,9 @@ App.onInit.Add(() => {
 });
 App.onJoinPlayer.Add(function (player) {
   _apiRequestDelay = 3;
-  if (!player.isGuest) {
-    player.tag = {
-      playerInfo: new PlayerInfo(player)
-    };
-    App.sayToStaffs(JSON.stringify({
-      name: player.name,
-      ...player.tag.playerInfo
-    }));
-  }
+  player.tag = {
+    playerInfo: null
+  };
   if (App.mapHashID == "yPzLZ7") {
     //@ts-ignore
     player.setCameraTarget(70, 27, 0);
@@ -717,7 +711,16 @@ App.onJoinPlayer.Add(function (player) {
     initGame(player);
   }
   // 노멀앱으로 실행한 경우
-  else if (!_creatorId) {
+  else if (!App.creatorID) {
+    if (!player.isGuest) {
+      player.tag = {
+        playerInfo: new PlayerInfo(player)
+      };
+      App.sayToStaffs(JSON.stringify({
+        name: player.name,
+        ...player.tag.playerInfo
+      }));
+    }
     spawnAtLobby(player);
     showGameLobbyWidget(player);
   }
@@ -726,10 +729,6 @@ function spawnAtLobby(player) {
   player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
 }
 App.onLeavePlayer.Add(function (player) {
-  const playerStorage = parseJsonString(player.storage) || {};
-  playerStorage.playerInfo = player.tag.playerInfo;
-  player.storage = JSON.stringify(playerStorage);
-  player.save();
   _apiRequestDelay = 3;
   if (_isMiniGame) {
     if (_drawerId === player.id) {
@@ -738,6 +737,10 @@ App.onLeavePlayer.Add(function (player) {
       }, 0.1);
     }
   } else {
+    const playerStorage = parseJsonString(player.storage) || {};
+    playerStorage.playerInfo = player.tag.playerInfo;
+    player.storage = JSON.stringify(playerStorage);
+    player.save();
     if (player.tag.participatingRoomNum) {
       const gameRoom = _gameRoomManager.getRoomByRoomNum(player.tag.participatingRoomNum);
       if (!gameRoom) return;
