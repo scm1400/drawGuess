@@ -633,6 +633,8 @@ class PlayerInfo {
     const progressPercentage = Math.floor(this.exp / needExp * 100);
     const message = `[경험치 획득] 🎉 ${exp} EXP 획득! \n📈 현재 경험치: ${progressPercentage}% (${this.exp}/${needExp} EXP)`;
     player.sendMessage(message, 0x0011ff);
+    //@ts-ignore
+    player.sendMessageOnPrivateArea(message, 0x0011ff, true);
     App.sayToStaffs(message + `\n${player.name}`, 0x0011ff);
     this.checkLevelUp(App.getPlayerByID(this.id));
   }
@@ -726,9 +728,6 @@ App.onJoinPlayer.Add(function (player) {
     showGameLobbyWidget(player);
   }
 });
-function spawnAtLobby(player) {
-  player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
-}
 App.onLeavePlayer.Add(function (player) {
   _apiRequestDelay = 3;
   if (_isMiniGame) {
@@ -757,6 +756,52 @@ App.onLeavePlayer.Add(function (player) {
     sendPlayerCountDataToServer2();
   }
 });
+App.onObjectTouched.Add(function (player, x, y, tileID, obj) {
+  if (!obj) return;
+  if (obj.type === ObjectEffectType.INTERACTION_WITH_ZEPSCRIPTS) {
+    if (obj?.param1) {
+      const value = String(obj?.param1);
+      if (value === "canvas") {
+        if (player.tag.canvasWidget) {
+          player.tag.canvasWidget.destroy();
+          player.tag.canvasWidget = null;
+          return;
+        }
+        if (player.isMobile) {
+          player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
+        } else {
+          player.tag.canvasWidget = player.showWidget("canvas.html", "middleright", 750, 500);
+        }
+        player.tag.canvasWidget.sendMessage({
+          type: "init",
+          //@ts-ignore
+          category: "",
+          quiz: "",
+          drawerName: player.name,
+          isMobile: player.isMobile,
+          //@ts-ignore
+          isTablet: player.isTablet,
+          isDrawer: true,
+          practiceMode: true,
+          //@ts-ignore
+          localizeContainer: LocalizeContainer[player.language]
+        });
+
+        //@ts-ignore
+        player.tag.canvasWidget.onMessage.Add(function (player, data) {
+          if (data.type == "close") {
+            if (player.tag.canvasWidget) {
+              player.tag.canvasWidget.destroy();
+            }
+          }
+        });
+      }
+    }
+  }
+});
+function spawnAtLobby(player) {
+  player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+}
 function showGameLobbyWidget(player) {
   if (player.isMobile) {
     player.tag.gameLobbyWidget = player.showWidget("GameLobby.html", "top", 400, 350);
@@ -1176,8 +1221,16 @@ App.onSay.Add((player, text) => {
       const drawerPlayer = App.getPlayerByID(_drawerId);
       if (drawerPlayer) {
         drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
+        if (drawerPlayer.tag.canvasWidget) {
+          drawerPlayer.tag.canvasWidget.sendMessage({
+            type: "correctAnswerNotify"
+          });
+        }
       }
-      gameRoom.initGame(player.id);
+      App.runLater(() => {
+        if (!gameRoom || !player) return;
+        gameRoom.initGame(player.id);
+      }, 3);
     } else {
       //@ts-ignore
       showSubLabelTypeI(player, "sub", `${LocalizeContainer[player.language].label_wrong_text}`);

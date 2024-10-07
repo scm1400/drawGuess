@@ -3,7 +3,7 @@
  */
 
 import "zep-script";
-import { ScriptPlayer } from "zep-script";
+import { ObjectEffectType, ScriptPlayer } from "zep-script";
 
 
 
@@ -759,6 +759,8 @@ class PlayerInfo {
             message,
             0x0011ff
         );
+        //@ts-ignore
+        player.sendMessageOnPrivateArea(message, 0x0011ff, true);
 
         ScriptApp.sayToStaffs(message + `\n${player.name}`, 0x0011ff);
 
@@ -819,8 +821,8 @@ ScriptApp.onInit.Add(() => {
 
 ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
     _apiRequestDelay = 3;
-    player.tag = {playerInfo: null};
-    
+    player.tag = { playerInfo: null };
+
     if (ScriptApp.mapHashID == "yPzLZ7") {
         //@ts-ignore
         player.setCameraTarget(70, 27, 0);
@@ -848,9 +850,6 @@ ScriptApp.onJoinPlayer.Add(function (player: GamePlayer) {
 
 });
 
-function spawnAtLobby(player) {
-    player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
-}
 
 ScriptApp.onLeavePlayer.Add(function (player: GamePlayer) {
     _apiRequestDelay = 3;
@@ -884,6 +883,54 @@ ScriptApp.onLeavePlayer.Add(function (player: GamePlayer) {
         sendPlayerCountDataToServer2();
     }
 })
+
+ScriptApp.onObjectTouched.Add(function (player, x, y, tileID, obj: any) {
+    if (!obj) return;
+    if (obj.type === ObjectEffectType.INTERACTION_WITH_ZEPSCRIPTS) {
+        if (obj?.param1) {
+            const value = String(obj?.param1);
+            if (value === "canvas") {
+                if (player.tag.canvasWidget) {
+                    player.tag.canvasWidget.destroy();
+                    player.tag.canvasWidget = null;
+                    return;
+                }
+                if (player.isMobile) {
+                    player.tag.canvasWidget = player.showWidget("canvas.html", "sidebar", 750, 500);
+                } else {
+                    player.tag.canvasWidget = player.showWidget("canvas.html", "middleright", 750, 500);
+                }
+                player.tag.canvasWidget.sendMessage({
+                    type: "init",
+                    //@ts-ignore
+                    category: "",
+                    quiz: "",
+                    drawerName: player.name,
+                    isMobile: player.isMobile,
+                    //@ts-ignore
+                    isTablet: player.isTablet,
+                    isDrawer: true,
+                    practiceMode: true,
+                    //@ts-ignore
+                    localizeContainer: LocalizeContainer[player.language]
+                })
+
+                //@ts-ignore
+                player.tag.canvasWidget.onMessage.Add(function (player, data) {
+                    if (data.type == "close") {
+                        if (player.tag.canvasWidget) {
+                            player.tag.canvasWidget.destroy();
+                        }
+                    }
+                });
+            }
+        }
+    }
+});
+
+function spawnAtLobby(player) {
+    player.spawnAt(Math.floor(Math.random() * (25 - _spawnPoint[0] + 1)) + _spawnPoint[0], Math.floor(Math.random() * (39 - _spawnPoint[1] + 1)) + _spawnPoint[1], 1);
+}
 
 function showGameLobbyWidget(player) {
     if (player.isMobile) {
@@ -1337,9 +1384,16 @@ ScriptApp.onSay.Add((player: GamePlayer, text) => {
             const drawerPlayer = ScriptApp.getPlayerByID(_drawerId) as GamePlayer;
             if (drawerPlayer) {
                 drawerPlayer.tag.playerInfo.incrementGuessCorrectForMyDrawings();
+                if (drawerPlayer.tag.canvasWidget) {
+                    drawerPlayer.tag.canvasWidget.sendMessage({
+                        type: "correctAnswerNotify",
+                    })
+                }
             }
-
-            gameRoom.initGame(player.id);
+            ScriptApp.runLater(() => {
+                if (!gameRoom || !player) return;
+                gameRoom.initGame(player.id);
+            }, 3)
         } else {
             //@ts-ignore
             showSubLabelTypeI(player, "sub", `${LocalizeContainer[player.language].label_wrong_text}`);

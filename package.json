@@ -8,15 +8,15 @@
     "deploy": "zep-script publish"
   },
   "devDependencies": {
-    "@babel/cli": "^7.24.1",
-    "@babel/core": "^7.24.4",
-    "@babel/preset-typescript": "^7.24.1",
-    "@types/node": "^20.12.7",
-    "eslint": "^9.1.1",
-    "typescript": "^5.4.5",
-    "zep-script": "0.13.2"
+    "@babel/cli": "^7.25.6",
+    "@babel/core": "^7.25.2",
+    "@babel/preset-typescript": "^7.24.7",
+    "@types/node": "^22.5.5",
+    "eslint": "^9.10.0",
+    "typescript": "^5.6.2",
+    "zep-script": "0.14.0"
   },
   "dependencies": {
-    "@zep.us/babel-plugin-zep-script": "^0.13.0"
+    "@zep.us/babel-plugin-zep-script": "^0.14.0"
   }
 }

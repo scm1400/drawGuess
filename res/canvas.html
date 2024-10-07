@@ -602,7 +602,13 @@
                     _isDrawingUser = Boolean(data.isDrawer);
                     _isMobile = Boolean(data.isMobile);
                     _isTablet = Boolean(data.isTablet);
-                    document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
+
+                    if (data.practiceMode) {
+                        document.getElementById("category").classList.add("hidden");
+                        document.getElementById("quiz").classList.add("hidden");
+                    } else {
+                        document.getElementById("category").innerText = _localizeConatainer["game_turn_info"].replace("((name))", data.drawerName).replace("((category))", data.category);
+                    }
 
                     if (_isMobile && !_isTablet) {
                         document.body.classList.add("mobile");
@@ -628,12 +634,11 @@
                             const contentHeight = widget.clientHeight - gap - paddingTop - paddingBottom - document.getElementById("tools").offsetHeight - 16;
                         }, 500)
                     }
-         
+
                     if (_isDrawingUser) {
                         document.getElementById("quiz").innerText = `${_localizeConatainer["text_answer"]}: ${data.quiz}`;
                         document.getElementById("quiz").classList.remove("hidden");
                         enableDrawingMode();
-
                     } else {
                         document.getElementById("tools").classList.add("hidden");
                         disableDrawingMode();
@@ -707,6 +712,66 @@
                 this.classList.add('selected');
             });
         });
+
+        // 캔버스에 그려진 이미지를 업로드하는 함수
+        function uploadCanvasToImgur() {
+            // 캔버스 이미지를 데이터 URL로 변환
+            const imageDataUrl = canvas.toDataURL({
+                format: 'png',  // 이미지 포맷을 지정 (PNG, JPEG 등)
+                quality: 0.8    // 이미지 품질 (0 ~ 1, PNG에서는 무시됨)
+            });
+
+            // 데이터 URL을 Blob으로 변환하는 함수
+            function dataUrlToBlob(dataUrl) {
+                const arr = dataUrl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new Blob([u8arr], { type: mime });
+            }
+
+            // 데이터 URL을 Blob으로 변환
+            const imageBlob = dataUrlToBlob(imageDataUrl);
+
+            // Blob 데이터를 Imgur API에 업로드
+            uploadImage(imageBlob);
+        }
+
+        // 이미지를 Imgur에 업로드하는 함수
+        function uploadImage(imageBlob) {
+            let formData = new FormData();
+            formData.append("image", imageBlob);
+            formData.append("title", "캐치마인드");
+            formData.append("description", `ZEP - 캐치마인드`);
+
+            fetch("https://api.imgur.com/3/image", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    Authorization: "Client-ID 66f3276606c481b",
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const link = data.data.link;
+                    document.querySelector(".image-edit").setAttribute("src", link);
+                    document.querySelector(".image").setAttribute("src", link);
+                    window.parent.postMessage({
+                        type: "uploadImage",
+                        link
+                    }, "*");
+
+                    console.log(link);
+                })
+                .catch(error => {
+                    alert("이미지 업로드에 실패했습니다!\n관리자에게 문의해보세요!");
+                    console.error("Error uploading image:", error);
+                });
+        }
     </script>
 </body>
 
